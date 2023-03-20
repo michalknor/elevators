@@ -45,6 +45,57 @@ class Launcher:
         self.draw_acceleration_of_elevators()
         self.draw_max_speed_of_elevators()
 
+        self.row_index += 1
+        self.heights_of_floors_button = ttk.Button(self.window, text="Heights of floors", command=self.draw_heights_of_floors)
+        self.heights_of_floors_button.grid(row=self.row_index, column=self.col_index + 1, sticky="w", pady=2)
+
+    def draw_heights_of_floors(self):
+        self.window.wm_attributes("-disabled", True)
+
+        # Creating the toplevel dialog
+        self.heights_of_floors = tk.Toplevel(self.window)
+
+        # Tell the window manager, this is the child widget.
+        # Interesting, if you want to let the child window
+        # flash if user clicks onto parent
+        self.heights_of_floors.transient(self.window)
+
+        # This is watching the window manager close button
+        # and uses the same callback function as the other buttons
+        # (you can use which ever you want, BUT REMEMBER TO ENABLE
+        # THE PARENT WINDOW AGAIN)
+        self.heights_of_floors.protocol("WM_DELETE_WINDOW", self.close_heights_of_floors)
+
+        #self.toplevel_dialog_label = ttk.Label(self.toplevel_dialog, text='Do you want to enable my parent window again?')
+        #self.toplevel_dialog_label.pack(side='top')
+
+        label = ttk.Label(self.heights_of_floors, text="Height")
+        label.grid(row=0, column=1, pady=2)
+
+        number_of_floors = int(self.number_of_floors_spinbox.get())
+
+        for i in range(1, number_of_floors+1):
+            label = ttk.Label(self.heights_of_floors, text=str(number_of_floors-i) + ". floor:")
+            label.grid(row=i+1, column=0, sticky="w", pady=2)
+
+            value = tk.StringVar(value="0")
+            entry = tk.Entry(self.heights_of_floors, validate="key", textvariable=value)
+            if i == number_of_floors:
+                entry.config(state="readonly")
+            entry.config(
+                state="readonly",
+                validatecommand=(entry.register(validate_positive_float), '%P'))
+            entry.grid(row=i+1, column=1, sticky="w", pady=2)
+
+    def close_heights_of_floors(self):
+        # IMPORTANT!
+        self.window.wm_attributes("-disabled", False) # IMPORTANT!
+
+        self.heights_of_floors.destroy()
+
+        # Possibly not needed, used to focus parent window again
+        self.window.deiconify()
+
     def draw_number_of_elevators(self):
         self.row_index += 1
 

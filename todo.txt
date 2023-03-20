@@ -1,0 +1,8 @@
+opis strategii 3-4
+diagramy
+deployment diagram
+component diagram
+struktura datovej zakladne
+ak su nejake dolezite casti kodu tak sa daju dat
+
+postavit sa pred vytahy, pocas prestavok aj mimo na kazdom poschodi - dni, hodiny
