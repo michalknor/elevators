@@ -1,11 +1,31 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
 import re
 
 
 def validate_positive_float(string):
     regex = re.compile(r"[0-9]*(\.)?[0-9]*$")
     return regex.match(string) is not None
+
+
+def draw_label(window, text, row_index, col_index, sticky=""):
+    label = tk.Label(window, text=text)
+    label.grid(row=row_index, column=col_index, sticky=sticky, pady=2)
+
+
+def do_nothing():
+    print("a")
+
+
+def file_save():
+    f = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
+    print(f)
+    if f is None:
+        return
+    text2save = "test"
+    f.write(text2save)
+    f.close()
 
 
 class Launcher:
@@ -25,6 +45,12 @@ class Launcher:
         self.elevator_call_logic_combobox = None
         self.acceleration_of_elevators_entry = None
         self.max_speed_of_elevators_entry = None
+        self.heights_of_floors_button = None
+
+        self.heights_of_floors_window = None
+
+        self.heights_of_floors = []
+        self.heights_of_floors_entry = []
 
         self.draw_widgets()
 
@@ -32,11 +58,13 @@ class Launcher:
 
         self.window.bind('<KeyPress>', self.key_press)
 
+        self.create_menu()
+
         self.window.mainloop()
 
     def key_press(self, e):
+        print(self.heights_of_floors)
         return
-        print(self.number_of_elevators_spinbox.get())
 
     def draw_widgets(self):
         self.draw_number_of_elevators()
@@ -47,59 +75,71 @@ class Launcher:
 
         self.row_index += 1
         self.heights_of_floors_button = ttk.Button(self.window, text="Heights of floors", command=self.draw_heights_of_floors)
-        self.heights_of_floors_button.grid(row=self.row_index, column=self.col_index + 1, sticky="w", pady=2)
+        self.heights_of_floors_button.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+
+    def create_menu(self):
+        menubar = tk.Menu(self.window)
+
+        menu_file = tk.Menu(menubar, tearoff=0)
+        menu_file.add_command(label="New", command=do_nothing)
+        menu_file.add_command(label="Open", command=do_nothing)
+        menu_file.add_command(label="Save", command=file_save)
+        menu_file.add_command(label="Save as...", command=file_save)
+        menu_file.add_separator()
+        menu_file.add_command(label="Exit", command=self.window.quit)
+
+        menubar.add_cascade(label="File", menu=menu_file)
+
+        self.window.config(menu=menubar)
 
     def draw_heights_of_floors(self):
         self.window.wm_attributes("-disabled", True)
+        self.heights_of_floors_window = tk.Toplevel(self.window)
+        self.heights_of_floors_window.transient(self.window)
+        self.heights_of_floors_window.protocol("WM_DELETE_WINDOW", self.close_heights_of_floors)
 
-        # Creating the toplevel dialog
-        self.heights_of_floors = tk.Toplevel(self.window)
-
-        # Tell the window manager, this is the child widget.
-        # Interesting, if you want to let the child window
-        # flash if user clicks onto parent
-        self.heights_of_floors.transient(self.window)
-
-        # This is watching the window manager close button
-        # and uses the same callback function as the other buttons
-        # (you can use which ever you want, BUT REMEMBER TO ENABLE
-        # THE PARENT WINDOW AGAIN)
-        self.heights_of_floors.protocol("WM_DELETE_WINDOW", self.close_heights_of_floors)
-
-        #self.toplevel_dialog_label = ttk.Label(self.toplevel_dialog, text='Do you want to enable my parent window again?')
-        #self.toplevel_dialog_label.pack(side='top')
-
-        label = ttk.Label(self.heights_of_floors, text="Height")
-        label.grid(row=0, column=1, pady=2)
+        draw_label(self.heights_of_floors_window, "Height", 0, 1, "w")
 
         number_of_floors = int(self.number_of_floors_spinbox.get())
 
-        for i in range(1, number_of_floors+1):
-            label = ttk.Label(self.heights_of_floors, text=str(number_of_floors-i) + ". floor:")
-            label.grid(row=i+1, column=0, sticky="w", pady=2)
+        while len(self.heights_of_floors) < number_of_floors:
+            self.heights_of_floors.append(0)
 
-            value = tk.StringVar(value="0")
-            entry = tk.Entry(self.heights_of_floors, validate="key", textvariable=value)
-            if i == number_of_floors:
+        while len(self.heights_of_floors) > number_of_floors:
+            self.heights_of_floors.pop()
+
+        self.heights_of_floors_entry = [None] * number_of_floors
+
+        for i in range(number_of_floors):
+            draw_label(self.heights_of_floors_window, str(number_of_floors-i) + ". floor:", i+1, 0, "w")
+
+            entry = tk.Entry(self.heights_of_floors_window,
+                             validate="key",
+                             textvariable=tk.StringVar(value=str(self.heights_of_floors[number_of_floors-i-1]))
+                             )
+
+            if i == number_of_floors - 1:
                 entry.config(state="readonly")
-            entry.config(
-                state="readonly",
-                validatecommand=(entry.register(validate_positive_float), '%P'))
+            else:
+                entry.config(validatecommand=(entry.register(validate_positive_float), '%P'))
+
             entry.grid(row=i+1, column=1, sticky="w", pady=2)
 
+            self.heights_of_floors_entry[number_of_floors-i-1] = entry
+
     def close_heights_of_floors(self):
-        # IMPORTANT!
-        self.window.wm_attributes("-disabled", False) # IMPORTANT!
+        self.heights_of_floors = [
+            self.heights_of_floors_entry[i].get() for i in range(len(self.heights_of_floors_entry))
+        ]
 
-        self.heights_of_floors.destroy()
-
-        # Possibly not needed, used to focus parent window again
+        self.window.wm_attributes("-disabled", False)
+        self.heights_of_floors_window.destroy()
         self.window.deiconify()
 
     def draw_number_of_elevators(self):
         self.row_index += 1
 
-        self.draw_label("Number of elevators:")
+        draw_label(self.window, "Number of elevators:", self.row_index, self.col_index, "w")
 
         self.number_of_elevators_spinbox = ttk.Spinbox(self.window,
                                                        width=5,
@@ -113,7 +153,7 @@ class Launcher:
     def draw_number_of_floors(self):
         self.row_index += 1
 
-        self.draw_label("Number of floors:")
+        draw_label(self.window, "Number of floors:", self.row_index, self.col_index, "w")
 
         self.number_of_floors_spinbox = ttk.Spinbox(self.window,
                                                        width=5,
@@ -127,7 +167,7 @@ class Launcher:
     def draw_elevator_call_logic(self):
         self.row_index = self.row_index + 1
 
-        self.draw_label("Elevator call logic:")
+        draw_label(self.window, "Elevator call logic:", self.row_index, self.col_index, "w")
 
         self.elevator_call_logic_combobox = ttk.Combobox(self.window, width=10, state="readonly")
         self.elevator_call_logic_combobox['values'] = ("SIMPLEX", "DUPLEX")
@@ -138,36 +178,28 @@ class Launcher:
     def draw_acceleration_of_elevators(self):
         self.row_index += 1
 
-        self.draw_label("Acceleration of elevators (m/s):")
+        draw_label(self.window, "Acceleration of elevators (m/s):", self.row_index, self.col_index, "w")
 
-        value = tk.StringVar(value="3")
-        self.acceleration_of_elevators_entry = tk.Entry(self.window, validate="key", textvariable=value)
+        self.acceleration_of_elevators_entry = tk.Entry(self.window, validate="key")
         self.acceleration_of_elevators_entry.config(
             validatecommand=(self.acceleration_of_elevators_entry.register(validate_positive_float), '%P'))
 
         self.acceleration_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
 
-        if validate_positive_float("546"):
-            value.set("546")
-
     def draw_max_speed_of_elevators(self):
         self.row_index += 1
 
-        self.draw_label("Maximal speed of elevators (m/s):")
+        draw_label(self.window, "Maximal speed of elevators (m/s):", self.row_index, self.col_index, "w")
 
-        value = tk.StringVar(value="3")
-        self.max_speed_of_elevators_entry = tk.Entry(self.window, validate="key", textvariable=value)
+        self.max_speed_of_elevators_entry = tk.Entry(self.window, validate="key")
         self.max_speed_of_elevators_entry.config(
             validatecommand=(self.max_speed_of_elevators_entry.register(validate_positive_float), '%P'))
 
         self.max_speed_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
 
-        if validate_positive_float("546"):
-            value.set("546")
-
-    def draw_label(self, text):
-        label = tk.Label(self.window, text=text)
-        label.grid(row=self.row_index, column=self.col_index, sticky="w", pady=2)
+    def load_file(self):
+        self.max_speed_of_elevators_entry.delete(0, tk.END) #delete all
+        self.max_speed_of_elevators_entry.insert(0, "10") #set all
 
     def draw_snake(self):
         self.canvas.delete("all")
