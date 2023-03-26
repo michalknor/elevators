@@ -4,8 +4,17 @@ from tkinter import filedialog
 import re
 
 
+DEFAULT_NUMBER_OF_FLOORS = 8
+DEFAULT_NUMBER_OF_ELEVATORS = 3
+
+
 def validate_positive_float(string):
-    regex = re.compile(r"[0-9]*(\.)?[0-9]*$")
+    regex = re.compile(r"(([1-9]+[0-9]*)|(0))?((\.)[0-9]*)?$")
+    return regex.match(string) is not None
+
+
+def validate_positive_integer(string):
+    regex = re.compile(r"([1-9]+[0-9]*)?$")
     return regex.match(string) is not None
 
 
@@ -31,11 +40,10 @@ def file_save():
 class Launcher:
     def __init__(self):
         self.window = tk.Tk()
-        self.window.geometry("1200x800")
+        #self.window.geometry("1200x800")
 
-        frame = tk.Frame(self.window, width=1200, height=800)
-
-        self.canvas = tk.Canvas(frame, width=80, height=80)
+        #frame = tk.Frame(self.window, width=1200, height=800)
+        #self.canvas = tk.Canvas(frame, width=80, height=80)
 
         self.row_index = 0
         self.col_index = 0
@@ -43,8 +51,13 @@ class Launcher:
         self.number_of_elevators_spinbox = None
         self.number_of_floors_spinbox = None
         self.elevator_call_logic_combobox = None
+        self.elevator_capacity = None
         self.acceleration_of_elevators_entry = None
+        self.deceleration_of_elevators_entry = None
         self.max_speed_of_elevators_entry = None
+        self.door_opening_time = None
+        self.door_idle_time = None
+
         self.heights_of_floors_button = None
 
         self.heights_of_floors_window = None
@@ -54,11 +67,14 @@ class Launcher:
 
         self.draw_widgets()
 
-        self.canvas.pack()
+        #self.canvas.pack()
 
-        self.window.bind('<KeyPress>', self.key_press)
+        #self.window.bind('<KeyPress>', self.key_press)
 
         self.create_menu()
+
+        self.window.resizable(0, 0)
+        self.window.eval('tk::PlaceWindow . center')
 
         self.window.mainloop()
 
@@ -70,12 +86,12 @@ class Launcher:
         self.draw_number_of_elevators()
         self.draw_number_of_floors()
         self.draw_elevator_call_logic()
+        self.draw_elevator_capacity()
         self.draw_acceleration_of_elevators()
+        self.draw_deceleration_of_elevators()
         self.draw_max_speed_of_elevators()
-
-        self.row_index += 1
-        self.heights_of_floors_button = ttk.Button(self.window, text="Heights of floors", command=self.draw_heights_of_floors)
-        self.heights_of_floors_button.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+        self.draw_door_opening_time()
+        self.draw_door_idle_time()
 
     def create_menu(self):
         menubar = tk.Menu(self.window)
@@ -90,6 +106,11 @@ class Launcher:
 
         menubar.add_cascade(label="File", menu=menu_file)
 
+        menu_edit = tk.Menu(menubar, tearoff=0)
+        menu_edit.add_command(label="Heights of floors", command=self.draw_heights_of_floors)
+
+        menubar.add_cascade(label="Edit", menu=menu_edit)
+
         self.window.config(menu=menubar)
 
     def draw_heights_of_floors(self):
@@ -97,6 +118,7 @@ class Launcher:
         self.heights_of_floors_window = tk.Toplevel(self.window)
         self.heights_of_floors_window.transient(self.window)
         self.heights_of_floors_window.protocol("WM_DELETE_WINDOW", self.close_heights_of_floors)
+        self.window.eval(f'tk::PlaceWindow {str(self.heights_of_floors_window)} center')
 
         draw_label(self.heights_of_floors_window, "Height", 0, 1, "w")
 
@@ -143,12 +165,12 @@ class Launcher:
 
         self.number_of_elevators_spinbox = ttk.Spinbox(self.window,
                                                        width=5,
-                                                       from_=1,
+                                                       from_=2,
                                                        to=10,
                                                        wrap=False,
                                                        state="readonly")
         self.number_of_elevators_spinbox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
-        self.number_of_elevators_spinbox.set(3)
+        self.number_of_elevators_spinbox.set(DEFAULT_NUMBER_OF_ELEVATORS)
 
     def draw_number_of_floors(self):
         self.row_index += 1
@@ -162,7 +184,7 @@ class Launcher:
                                                        wrap=False,
                                                        state="readonly")
         self.number_of_floors_spinbox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
-        self.number_of_floors_spinbox.set(8)
+        self.number_of_floors_spinbox.set(DEFAULT_NUMBER_OF_FLOORS)
 
     def draw_elevator_call_logic(self):
         self.row_index = self.row_index + 1
@@ -175,6 +197,17 @@ class Launcher:
         if max(0, -5) < len(self.elevator_call_logic_combobox['values']):
             self.elevator_call_logic_combobox.current(0)
 
+    def draw_elevator_capacity(self):
+        self.row_index += 1
+
+        draw_label(self.window, "Elevator capacity (person):", self.row_index, self.col_index, "w")
+
+        self.elevator_capacity = tk.Entry(self.window, validate="key")
+        self.elevator_capacity.config(
+            validatecommand=(self.elevator_capacity.register(validate_positive_integer), '%P'))
+
+        self.elevator_capacity.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+
     def draw_acceleration_of_elevators(self):
         self.row_index += 1
 
@@ -185,6 +218,17 @@ class Launcher:
             validatecommand=(self.acceleration_of_elevators_entry.register(validate_positive_float), '%P'))
 
         self.acceleration_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+
+    def draw_deceleration_of_elevators(self):
+        self.row_index += 1
+
+        draw_label(self.window, "Deceleration of elevators (m/s):", self.row_index, self.col_index, "w")
+
+        self.deceleration_of_elevators_entry = tk.Entry(self.window, validate="key")
+        self.deceleration_of_elevators_entry.config(
+            validatecommand=(self.acceleration_of_elevators_entry.register(validate_positive_float), '%P'))
+
+        self.deceleration_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
 
     def draw_max_speed_of_elevators(self):
         self.row_index += 1
@@ -197,20 +241,42 @@ class Launcher:
 
         self.max_speed_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
 
+    def draw_door_opening_time(self):
+        self.row_index += 1
+
+        draw_label(self.window, "Time for doors to fully open (ms):", self.row_index, self.col_index, "w")
+
+        self.door_opening_time = tk.Entry(self.window, validate="key")
+        self.door_opening_time.config(
+            validatecommand=(self.door_opening_time.register(validate_positive_integer), '%P'))
+
+        self.door_opening_time.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+
+    def draw_door_idle_time(self):
+        self.row_index += 1
+
+        draw_label(self.window, "Idle time before closing doors (ms):", self.row_index, self.col_index, "w")
+
+        self.door_idle_time = tk.Entry(self.window, validate="key")
+        self.door_idle_time.config(
+            validatecommand=(self.door_idle_time.register(validate_positive_integer), '%P'))
+
+        self.door_idle_time.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+
     def load_file(self):
         self.max_speed_of_elevators_entry.delete(0, tk.END) #delete all
         self.max_speed_of_elevators_entry.insert(0, "10") #set all
 
-    def draw_snake(self):
-        self.canvas.delete("all")
-        self.canvas.create_rectangle(self.snake_position[0][0] * self.item_size,
-                                     self.snake_position[0][1] * self.item_size,
-                                     self.snake_position[0][0] * self.item_size + self.item_size,
-                                     self.snake_position[0][1] * self.item_size + self.item_size,
-                                     fill=self.color["snake_head"])
-        for i in range(1, len(self.snake_position)):
-            self.canvas.create_rectangle(self.snake_position[i][0] * self.item_size,
-                                         self.snake_position[i][1] * self.item_size,
-                                         self.snake_position[i][0] * self.item_size + self.item_size,
-                                         self.snake_position[i][1] * self.item_size + self.item_size,
-                                         fill=self.color["snake_body"])
+    # def draw_snake(self):
+    #     self.canvas.delete("all")
+    #     self.canvas.create_rectangle(self.snake_position[0][0] * self.item_size,
+    #                                  self.snake_position[0][1] * self.item_size,
+    #                                  self.snake_position[0][0] * self.item_size + self.item_size,
+    #                                  self.snake_position[0][1] * self.item_size + self.item_size,
+    #                                  fill=self.color["snake_head"])
+    #     for i in range(1, len(self.snake_position)):
+    #         self.canvas.create_rectangle(self.snake_position[i][0] * self.item_size,
+    #                                      self.snake_position[i][1] * self.item_size,
+    #                                      self.snake_position[i][0] * self.item_size + self.item_size,
+    #                                      self.snake_position[i][1] * self.item_size + self.item_size,
+    #                                      fill=self.color["snake_body"])
