@@ -1,45 +1,27 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-import re
 import json
+from src.ui.Util import *
 
-DEFAULT_NUMBER_OF_FLOORS = 8
+
 DEFAULT_NUMBER_OF_ELEVATORS = 3
-
-
-def validate_positive_float(string):
-    regex = re.compile(r"(([1-9]+[0-9]*)|(0))?((\.)[0-9]*)?$")
-    return regex.match(string) is not None
-
-
-def validate_positive_integer(string):
-    regex = re.compile(r"([1-9]+[0-9]*)?$")
-    return regex.match(string) is not None
-
-
-def draw_label(window, text, row_index, col_index, sticky=""):
-    label = tk.Label(window, text=text)
-    label.grid(row=row_index, column=col_index, sticky=sticky, pady=2)
-
-
-def do_nothing():
-    print("a")
+DEFAULT_NUMBER_OF_FLOORS = 8
+DEFAULT_ELEVATOR_LOGIC = 0
 
 
 class Launcher:
     def __init__(self):
         self.window = tk.Tk()
-        #self.window.geometry("1200x800")
 
-        #frame = tk.Frame(self.window, width=1200, height=800)
-        #self.canvas = tk.Canvas(frame, width=80, height=80)
+        self.window.title("Elevators - config")
 
         self.row_index = 0
         self.col_index = 0
 
-        self.menubar = None
+        self.modal_window = None
 
+        self.menubar = None
         self.menu_file = None
         self.menu_edit = None
 
@@ -55,8 +37,6 @@ class Launcher:
         self.door_idle_time_entry = None
         self.organize_elevators_entry = None
 
-        self.modal_window = None
-
         self.heights_of_floors = []
         self.heights_of_floors_entry = []
 
@@ -65,21 +45,15 @@ class Launcher:
 
         self.file_save = None
 
-        self.create_menu()
         self.draw_widgets()
+        self.create_menu()
 
-        #self.canvas.pack()
-
-        #self.window.bind('<KeyPress>', self.key_press)
+        self.elevator_call_logic_update()
 
         self.window.resizable(0, 0)
         self.window.eval('tk::PlaceWindow . center')
 
         self.window.mainloop()
-
-    def key_press(self, e):
-        print(self.heights_of_floors)
-        return
 
     def draw_widgets(self):
         self.number_of_elevators_spinbox = self.get_spinbox("Number of elevators:", 2, 10)
@@ -91,40 +65,56 @@ class Launcher:
         self.draw_elevator_call_logic()
 
         self.elevator_capacity_entry = self.get_entry("Elevator capacity (person):", validate_positive_integer)
-        self.operate_floors_entry = self.get_entry("Operate floors only if load ≤ (%):", validate_positive_integer)
+        self.operate_floors_entry = self.get_entry("Operate floors only if load ≤ (%):", validate_positive_percentage)
 
-        self.acceleration_of_elevators_entry = self.get_entry("Acceleration of elevators (m/s):", validate_positive_integer)
-        self.deceleration_of_elevators_entry = self.get_entry("Deceleration of elevators (m/s):", validate_positive_integer)
-        self.max_speed_of_elevators_entry = self.get_entry("Maximal speed of elevators (m/s):", validate_positive_integer)
+        self.acceleration_of_elevators_entry = self.get_entry("Acceleration of elevators (m/s^2):", validate_positive_float)
+        self.deceleration_of_elevators_entry = self.get_entry("Deceleration of elevators (m/s^2):", validate_positive_float)
+        self.max_speed_of_elevators_entry = self.get_entry("Maximal speed of elevators (m/s):", validate_positive_float)
 
-        self.door_opening_time_entry = self.get_entry("Time for doors to fully open (ms):", validate_positive_float)
-        self.door_idle_time_entry = self.get_entry("Idle time before closing doors (ms):", validate_positive_float)
+        self.door_opening_time_entry = self.get_entry("Time for doors to fully open (s):", validate_positive_float)
+        self.door_idle_time_entry = self.get_entry("Idle time before closing doors (s):", validate_positive_float)
 
         self.organize_elevators_entry = self.get_entry("Organize elevators after idle (s):", validate_positive_float)
 
     def create_menu(self):
         self.menubar = tk.Menu(self.window)
 
-        menu_file = tk.Menu(self.menubar, tearoff=0)
-        menu_file.add_command(label="New", command=do_nothing)
-        menu_file.add_command(label="Open", command=do_nothing)
-        menu_file.add_command(label="Save", command=self.save)
-        menu_file.add_command(label="Save as...", command=self.save_as)
-        menu_file.add_separator()
-        menu_file.add_command(label="Exit", command=self.window.quit)
+        self.menu_file = tk.Menu(self.menubar, tearoff=0)
+        self.menu_file.add_command(label="New", command=self.on_new)
+        self.menu_file.add_command(label="Open", command=self.on_open) #todo
+        self.menu_file.add_command(label="Save", command=self.on_save) #todo
+        self.menu_file.add_command(label="Save as...", command=self.on_save_as)
+        self.menu_file.add_separator()
+        self.menu_file.add_command(label="Exit", command=self.window.quit)
 
-        self.menubar.add_cascade(label="File", menu=menu_file)
+        self.menubar.add_cascade(label="File", menu=self.menu_file)
 
-        menu_edit = tk.Menu(self.menubar, tearoff=0)
-        menu_edit.add_command(label="Heights of floors", command=self.show_heights_of_floors)
-        menu_edit.add_command(label="Elevators floor operation", command=self.draw_elevators_floor_operation)
+        self.menu_edit = tk.Menu(self.menubar, tearoff=0)
+        self.menu_edit.add_command(label="Heights of floors", command=self.show_heights_of_floors)
+        self.menu_edit.add_command(label="Elevators floor operation", command=self.draw_elevators_floor_operation)
 
-        self.menubar.add_cascade(label="Edit", menu=menu_edit)
+        self.menubar.add_cascade(label="Edit", menu=self.menu_edit)
+
+        self.menubar.add_cascade(label="Run")
 
         self.window.config(menu=self.menubar)
 
-        self.menu_file = menu_file
-        self.menu_edit = menu_edit
+    def reset_components_to_default(self):
+        self.number_of_elevators_spinbox.set(DEFAULT_NUMBER_OF_ELEVATORS)
+        self.number_of_floors_spinbox.set(DEFAULT_NUMBER_OF_FLOORS)
+        self.elevator_call_logic_combobox.current(DEFAULT_ELEVATOR_LOGIC)
+        self.elevator_capacity_entry.delete(0, tk.END)
+        self.operate_floors_entry.delete(0, tk.END)
+        self.acceleration_of_elevators_entry.delete(0, tk.END)
+        self.deceleration_of_elevators_entry.delete(0, tk.END)
+        self.max_speed_of_elevators_entry.delete(0, tk.END)
+        self.door_opening_time_entry.delete(0, tk.END)
+        self.door_idle_time_entry.delete(0, tk.END)
+        self.organize_elevators_entry.delete(0, tk.END)
+
+    def on_new(self):
+        self.file_save = None
+        self.reset_components_to_default()
 
     def create_modal_window(self, close_action):
         self.window.wm_attributes("-disabled", True)
@@ -222,24 +212,16 @@ class Launcher:
         self.elevator_call_logic_combobox['values'] = ("SIMPLEX", "DUPLEX")
         self.elevator_call_logic_combobox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
         self.elevator_call_logic_combobox.bind("<<ComboboxSelected>>", self.elevator_call_logic_update)
-        self.elevator_call_logic_combobox.current(0)
-        self.elevator_call_logic_update()
+        self.elevator_call_logic_combobox.current(DEFAULT_ELEVATOR_LOGIC)
 
     def elevator_call_logic_update(self, event=None):
         if self.elevator_call_logic_combobox.get() == "SIMPLEX":
-            self.enable_only_simplex_components()
+            self.organize_elevators_entry.config(state="disabled")
             return
 
         if self.elevator_call_logic_combobox.get() == "DUPLEX":
-            self.enable_only_duplex_components()
+            self.organize_elevators_entry.config(state="normal")
             return
-
-    def enable_only_simplex_components(self):
-        self.menu_edit.entryconfigure("Elevators floor operation", state="disabled")
-
-    def enable_only_duplex_components(self):
-        self.menu_edit.entryconfigure("Elevators floor operation", state="normal")
-        return
 
     def adjust_heights_of_floors(self, number_of_floors):
         for i in range(len(self.heights_of_floors), number_of_floors):
@@ -262,11 +244,11 @@ class Launcher:
         for i in range(number_of_elevators, len(self.elevators_floor_operation)):
             self.elevators_floor_operation.pop()
 
-    def save_as(self):
+    def on_save_as(self):
         self.file_save = None
-        self.save()
+        self.on_save()
 
-    def save(self):
+    def on_save(self):
         if self.file_save is None:
             self.file_save = filedialog.asksaveasfile(mode="w", filetypes=[("JSON", ".json")], defaultextension=".json")
 
@@ -277,6 +259,6 @@ class Launcher:
         self.file_save.write(json.dumps(my_dict))
         self.file_save.close()
 
-    def load_file(self):
+    def on_open(self):
         self.max_speed_of_elevators_entry.delete(0, tk.END) #delete all
         self.max_speed_of_elevators_entry.insert(0, "10") #set all
