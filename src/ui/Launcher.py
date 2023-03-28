@@ -4,7 +4,6 @@ from tkinter import filedialog
 import re
 import json
 
-
 DEFAULT_NUMBER_OF_FLOORS = 8
 DEFAULT_NUMBER_OF_ELEVATORS = 3
 
