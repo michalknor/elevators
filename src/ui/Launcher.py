@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import re
+import json
 
 
 DEFAULT_NUMBER_OF_FLOORS = 8
@@ -27,16 +28,6 @@ def do_nothing():
     print("a")
 
 
-def file_save():
-    f = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
-    print(f)
-    if f is None:
-        return
-    text2save = "test"
-    f.write(text2save)
-    f.close()
-
-
 class Launcher:
     def __init__(self):
         self.window = tk.Tk()
@@ -48,30 +39,39 @@ class Launcher:
         self.row_index = 0
         self.col_index = 0
 
+        self.menubar = None
+
+        self.menu_file = None
+        self.menu_edit = None
+
         self.number_of_elevators_spinbox = None
         self.number_of_floors_spinbox = None
         self.elevator_call_logic_combobox = None
-        self.elevator_capacity = None
+        self.elevator_capacity_entry = None
+        self.operate_floors_entry = None
         self.acceleration_of_elevators_entry = None
         self.deceleration_of_elevators_entry = None
         self.max_speed_of_elevators_entry = None
-        self.door_opening_time = None
-        self.door_idle_time = None
+        self.door_opening_time_entry = None
+        self.door_idle_time_entry = None
+        self.organize_elevators_entry = None
 
-        self.heights_of_floors_button = None
-
-        self.heights_of_floors_window = None
+        self.modal_window = None
 
         self.heights_of_floors = []
         self.heights_of_floors_entry = []
 
+        self.elevators_floor_operation_checkbox = []
+        self.elevators_floor_operation = []
+
+        self.file_save = None
+
+        self.create_menu()
         self.draw_widgets()
 
         #self.canvas.pack()
 
         #self.window.bind('<KeyPress>', self.key_press)
-
-        self.create_menu()
 
         self.window.resizable(0, 0)
         self.window.eval('tk::PlaceWindow . center')
@@ -83,62 +83,76 @@ class Launcher:
         return
 
     def draw_widgets(self):
-        self.draw_number_of_elevators()
-        self.draw_number_of_floors()
+        self.number_of_elevators_spinbox = self.get_spinbox("Number of elevators:", 2, 10)
+        self.number_of_elevators_spinbox.set(DEFAULT_NUMBER_OF_ELEVATORS)
+
+        self.number_of_floors_spinbox = self.get_spinbox("Number of floors:", 3, 50)
+        self.number_of_floors_spinbox.set(DEFAULT_NUMBER_OF_FLOORS)
+
         self.draw_elevator_call_logic()
-        self.draw_elevator_capacity()
-        self.draw_acceleration_of_elevators()
-        self.draw_deceleration_of_elevators()
-        self.draw_max_speed_of_elevators()
-        self.draw_door_opening_time()
-        self.draw_door_idle_time()
+
+        self.elevator_capacity_entry = self.get_entry("Elevator capacity (person):", validate_positive_integer)
+        self.operate_floors_entry = self.get_entry("Operate floors only if load ≤ (%):", validate_positive_integer)
+
+        self.acceleration_of_elevators_entry = self.get_entry("Acceleration of elevators (m/s):", validate_positive_integer)
+        self.deceleration_of_elevators_entry = self.get_entry("Deceleration of elevators (m/s):", validate_positive_integer)
+        self.max_speed_of_elevators_entry = self.get_entry("Maximal speed of elevators (m/s):", validate_positive_integer)
+
+        self.door_opening_time_entry = self.get_entry("Time for doors to fully open (ms):", validate_positive_float)
+        self.door_idle_time_entry = self.get_entry("Idle time before closing doors (ms):", validate_positive_float)
+
+        self.organize_elevators_entry = self.get_entry("Organize elevators after idle (s):", validate_positive_float)
 
     def create_menu(self):
-        menubar = tk.Menu(self.window)
+        self.menubar = tk.Menu(self.window)
 
-        menu_file = tk.Menu(menubar, tearoff=0)
+        menu_file = tk.Menu(self.menubar, tearoff=0)
         menu_file.add_command(label="New", command=do_nothing)
         menu_file.add_command(label="Open", command=do_nothing)
-        menu_file.add_command(label="Save", command=file_save)
-        menu_file.add_command(label="Save as...", command=file_save)
+        menu_file.add_command(label="Save", command=self.save)
+        menu_file.add_command(label="Save as...", command=self.save_as)
         menu_file.add_separator()
         menu_file.add_command(label="Exit", command=self.window.quit)
 
-        menubar.add_cascade(label="File", menu=menu_file)
+        self.menubar.add_cascade(label="File", menu=menu_file)
 
-        menu_edit = tk.Menu(menubar, tearoff=0)
-        menu_edit.add_command(label="Heights of floors", command=self.draw_heights_of_floors)
+        menu_edit = tk.Menu(self.menubar, tearoff=0)
+        menu_edit.add_command(label="Heights of floors", command=self.show_heights_of_floors)
+        menu_edit.add_command(label="Elevators floor operation", command=self.draw_elevators_floor_operation)
 
-        menubar.add_cascade(label="Edit", menu=menu_edit)
+        self.menubar.add_cascade(label="Edit", menu=menu_edit)
 
-        self.window.config(menu=menubar)
+        self.window.config(menu=self.menubar)
 
-    def draw_heights_of_floors(self):
+        self.menu_file = menu_file
+        self.menu_edit = menu_edit
+
+    def create_modal_window(self, close_action):
         self.window.wm_attributes("-disabled", True)
-        self.heights_of_floors_window = tk.Toplevel(self.window)
-        self.heights_of_floors_window.transient(self.window)
-        self.heights_of_floors_window.protocol("WM_DELETE_WINDOW", self.close_heights_of_floors)
-        self.window.eval(f'tk::PlaceWindow {str(self.heights_of_floors_window)} center')
+        self.modal_window = tk.Toplevel(self.window)
+        self.modal_window.transient(self.window)
+        self.modal_window.protocol("WM_DELETE_WINDOW", close_action)
+        self.window.eval(f'tk::PlaceWindow {str(self.modal_window)} center')
 
-        draw_label(self.heights_of_floors_window, "Height", 0, 1, "w")
+    def show_heights_of_floors(self):
+        self.create_modal_window(self.close_modal_window)
+
+        draw_label(self.modal_window, "Height", 0, 1, "w")
 
         number_of_floors = int(self.number_of_floors_spinbox.get())
 
-        while len(self.heights_of_floors) < number_of_floors:
-            self.heights_of_floors.append(0)
-
-        while len(self.heights_of_floors) > number_of_floors:
-            self.heights_of_floors.pop()
+        self.adjust_heights_of_floors(number_of_floors)
 
         self.heights_of_floors_entry = [None] * number_of_floors
 
         for i in range(number_of_floors):
-            draw_label(self.heights_of_floors_window, str(number_of_floors-i) + ". floor:", i+1, 0, "w")
+            draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
 
-            entry = tk.Entry(self.heights_of_floors_window,
-                             validate="key",
-                             textvariable=tk.StringVar(value=str(self.heights_of_floors[number_of_floors-i-1]))
-                             )
+            entry = tk.Entry(
+                self.modal_window,
+                validate="key",
+                textvariable=self.heights_of_floors[number_of_floors-i-1]
+            )
 
             if i == number_of_floors - 1:
                 entry.config(state="readonly")
@@ -149,42 +163,56 @@ class Launcher:
 
             self.heights_of_floors_entry[number_of_floors-i-1] = entry
 
-    def close_heights_of_floors(self):
-        self.heights_of_floors = [
-            self.heights_of_floors_entry[i].get() for i in range(len(self.heights_of_floors_entry))
-        ]
+    def draw_elevators_floor_operation(self):
+        self.create_modal_window(self.close_modal_window)
 
+        number_of_elevators = int(self.number_of_elevators_spinbox.get())
+        number_of_floors = int(self.number_of_floors_spinbox.get())
+
+        self.adjust_elevators_floor_operation(number_of_elevators, number_of_floors)
+
+        self.elevators_floor_operation_checkbox = [[True] * number_of_floors] * number_of_elevators
+
+        for i in range(number_of_floors):
+            draw_label(self.modal_window, str(number_of_floors-i-1) + ". floor:", i+1, 0, "w")
+            for j in range(number_of_elevators):
+                checkbutton = ttk.Checkbutton(
+                    self.modal_window,
+                    variable=self.elevators_floor_operation[j][number_of_floors-i-1]
+                )
+
+                checkbutton.grid(row=i+1, column=j+1, sticky="w", pady=2)
+
+                self.elevators_floor_operation_checkbox[j][number_of_floors-i-1] = checkbutton
+
+    def close_modal_window(self):
         self.window.wm_attributes("-disabled", False)
-        self.heights_of_floors_window.destroy()
+        self.modal_window.destroy()
         self.window.deiconify()
 
-    def draw_number_of_elevators(self):
+    def get_spinbox(self, text, spinbox_from, spinbox_to):
         self.row_index += 1
 
-        draw_label(self.window, "Number of elevators:", self.row_index, self.col_index, "w")
+        draw_label(self.window, text, self.row_index, self.col_index, "w")
 
-        self.number_of_elevators_spinbox = ttk.Spinbox(self.window,
-                                                       width=5,
-                                                       from_=2,
-                                                       to=10,
-                                                       wrap=False,
-                                                       state="readonly")
-        self.number_of_elevators_spinbox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
-        self.number_of_elevators_spinbox.set(DEFAULT_NUMBER_OF_ELEVATORS)
+        spinbox = ttk.Spinbox(self.window, width=5, from_=spinbox_from, to=spinbox_to, wrap=False, state="readonly")
 
-    def draw_number_of_floors(self):
+        spinbox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+
+        return spinbox
+
+    def get_entry(self, text, validation):
         self.row_index += 1
 
-        draw_label(self.window, "Number of floors:", self.row_index, self.col_index, "w")
+        draw_label(self.window, text, self.row_index, self.col_index, "w")
 
-        self.number_of_floors_spinbox = ttk.Spinbox(self.window,
-                                                       width=5,
-                                                       from_=3,
-                                                       to=50,
-                                                       wrap=False,
-                                                       state="readonly")
-        self.number_of_floors_spinbox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
-        self.number_of_floors_spinbox.set(DEFAULT_NUMBER_OF_FLOORS)
+        entry = ttk.Entry(self.window, validate="key")
+
+        entry.config(validatecommand=(entry.register(validation), '%P'))
+
+        entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+
+        return entry
 
     def draw_elevator_call_logic(self):
         self.row_index = self.row_index + 1
@@ -194,89 +222,62 @@ class Launcher:
         self.elevator_call_logic_combobox = ttk.Combobox(self.window, width=10, state="readonly")
         self.elevator_call_logic_combobox['values'] = ("SIMPLEX", "DUPLEX")
         self.elevator_call_logic_combobox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
-        if max(0, -5) < len(self.elevator_call_logic_combobox['values']):
-            self.elevator_call_logic_combobox.current(0)
+        self.elevator_call_logic_combobox.bind("<<ComboboxSelected>>", self.elevator_call_logic_update)
+        self.elevator_call_logic_combobox.current(0)
+        self.elevator_call_logic_update()
 
-    def draw_elevator_capacity(self):
-        self.row_index += 1
+    def elevator_call_logic_update(self, event=None):
+        if self.elevator_call_logic_combobox.get() == "SIMPLEX":
+            self.enable_only_simplex_components()
+            return
 
-        draw_label(self.window, "Elevator capacity (person):", self.row_index, self.col_index, "w")
+        if self.elevator_call_logic_combobox.get() == "DUPLEX":
+            self.enable_only_duplex_components()
+            return
 
-        self.elevator_capacity = tk.Entry(self.window, validate="key")
-        self.elevator_capacity.config(
-            validatecommand=(self.elevator_capacity.register(validate_positive_integer), '%P'))
+    def enable_only_simplex_components(self):
+        self.menu_edit.entryconfigure("Elevators floor operation", state="disabled")
 
-        self.elevator_capacity.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+    def enable_only_duplex_components(self):
+        self.menu_edit.entryconfigure("Elevators floor operation", state="normal")
+        return
 
-    def draw_acceleration_of_elevators(self):
-        self.row_index += 1
+    def adjust_heights_of_floors(self, number_of_floors):
+        for i in range(len(self.heights_of_floors), number_of_floors):
+            self.heights_of_floors.append(tk.StringVar(value=0))
 
-        draw_label(self.window, "Acceleration of elevators (m/s):", self.row_index, self.col_index, "w")
+        for i in range(number_of_floors, len(self.heights_of_floors)):
+            self.heights_of_floors.pop()
 
-        self.acceleration_of_elevators_entry = tk.Entry(self.window, validate="key")
-        self.acceleration_of_elevators_entry.config(
-            validatecommand=(self.acceleration_of_elevators_entry.register(validate_positive_float), '%P'))
+    def adjust_elevators_floor_operation(self, number_of_elevators, number_of_floors):
+        for i in range(len(self.elevators_floor_operation)):
+            for j in range(len(self.elevators_floor_operation[i]), number_of_floors):
+                self.elevators_floor_operation[i].append(tk.BooleanVar(value=True))
 
-        self.acceleration_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+            for j in range(number_of_floors, len(self.elevators_floor_operation[i])):
+                self.elevators_floor_operation[i].pop()
 
-    def draw_deceleration_of_elevators(self):
-        self.row_index += 1
+        for i in range(len(self.elevators_floor_operation), number_of_elevators):
+            self.elevators_floor_operation.append([tk.BooleanVar(value=True) for i in range(number_of_floors)])
 
-        draw_label(self.window, "Deceleration of elevators (m/s):", self.row_index, self.col_index, "w")
+        for i in range(number_of_elevators, len(self.elevators_floor_operation)):
+            self.elevators_floor_operation.pop()
 
-        self.deceleration_of_elevators_entry = tk.Entry(self.window, validate="key")
-        self.deceleration_of_elevators_entry.config(
-            validatecommand=(self.acceleration_of_elevators_entry.register(validate_positive_float), '%P'))
+    def save_as(self):
+        self.file_save = None
+        self.save()
 
-        self.deceleration_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+    def save(self):
+        if self.file_save is None:
+            self.file_save = filedialog.asksaveasfile(mode="w", filetypes=[("JSON", ".json")], defaultextension=".json")
 
-    def draw_max_speed_of_elevators(self):
-        self.row_index += 1
+        if self.file_save is None:
+            return
 
-        draw_label(self.window, "Maximal speed of elevators (m/s):", self.row_index, self.col_index, "w")
-
-        self.max_speed_of_elevators_entry = tk.Entry(self.window, validate="key")
-        self.max_speed_of_elevators_entry.config(
-            validatecommand=(self.max_speed_of_elevators_entry.register(validate_positive_float), '%P'))
-
-        self.max_speed_of_elevators_entry.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
-
-    def draw_door_opening_time(self):
-        self.row_index += 1
-
-        draw_label(self.window, "Time for doors to fully open (ms):", self.row_index, self.col_index, "w")
-
-        self.door_opening_time = tk.Entry(self.window, validate="key")
-        self.door_opening_time.config(
-            validatecommand=(self.door_opening_time.register(validate_positive_integer), '%P'))
-
-        self.door_opening_time.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
-
-    def draw_door_idle_time(self):
-        self.row_index += 1
-
-        draw_label(self.window, "Idle time before closing doors (ms):", self.row_index, self.col_index, "w")
-
-        self.door_idle_time = tk.Entry(self.window, validate="key")
-        self.door_idle_time.config(
-            validatecommand=(self.door_idle_time.register(validate_positive_integer), '%P'))
-
-        self.door_idle_time.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
+        my_dict = dict()
+        self.file_save.write(json.dumps(my_dict))
+        self.file_save.close()
 
     def load_file(self):
         self.max_speed_of_elevators_entry.delete(0, tk.END) #delete all
         self.max_speed_of_elevators_entry.insert(0, "10") #set all
-
-    # def draw_snake(self):
-    #     self.canvas.delete("all")
-    #     self.canvas.create_rectangle(self.snake_position[0][0] * self.item_size,
-    #                                  self.snake_position[0][1] * self.item_size,
-    #                                  self.snake_position[0][0] * self.item_size + self.item_size,
-    #                                  self.snake_position[0][1] * self.item_size + self.item_size,
-    #                                  fill=self.color["snake_head"])
-    #     for i in range(1, len(self.snake_position)):
-    #         self.canvas.create_rectangle(self.snake_position[i][0] * self.item_size,
-    #                                      self.snake_position[i][1] * self.item_size,
-    #                                      self.snake_position[i][0] * self.item_size + self.item_size,
-    #                                      self.snake_position[i][1] * self.item_size + self.item_size,
-    #                                      fill=self.color["snake_body"])
