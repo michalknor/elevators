@@ -179,7 +179,7 @@ class Launcher:
         self.modal_window.destroy()
         self.window.deiconify()
 
-    def get_spinbox(self, text, spinbox_from, spinbox_to):
+    def get_spinbox(self, text, spinbox_from, spinbox_to) -> ttk.Spinbox:
         self.row_index += 1
 
         draw_label(self.window, text, self.row_index, self.col_index, "w")
@@ -190,7 +190,7 @@ class Launcher:
 
         return spinbox
 
-    def get_entry(self, text, validation):
+    def get_entry(self, text, validation) -> ttk.Entry:
         self.row_index += 1
 
         draw_label(self.window, text, self.row_index, self.col_index, "w")
