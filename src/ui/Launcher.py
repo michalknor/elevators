@@ -2,7 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import json
-from src.ui.Util import *
+import src.ui.Util as Util
+
+import random as rand
 
 
 DEFAULT_NUMBER_OF_ELEVATORS = 3
@@ -14,7 +16,7 @@ class Launcher:
     def __init__(self):
         self.window = tk.Tk()
 
-        self.window.title("Elevators - config")
+        self.window.title("Elevators simulation - config")
 
         self.row_index = 0
         self.col_index = 0
@@ -43,7 +45,7 @@ class Launcher:
         self.elevators_floor_operation_checkbox = []
         self.elevators_floor_operation = []
 
-        self.file_save = None
+        self.file_save_name = None
 
         self.draw_widgets()
         self.create_menu()
@@ -64,17 +66,17 @@ class Launcher:
 
         self.draw_elevator_call_logic()
 
-        self.elevator_capacity_entry = self.get_entry("Elevator capacity (person):", validate_positive_integer)
-        self.operate_floors_entry = self.get_entry("Operate floors only if load ≤ (%):", validate_positive_percentage)
+        self.elevator_capacity_entry = self.get_entry("Elevator capacity (person):", Util.validate_positive_integer)
+        self.operate_floors_entry = self.get_entry("Operate if remaining capacity is at least (person):", Util.validate_positive_integer)
 
-        self.acceleration_of_elevators_entry = self.get_entry("Acceleration of elevators (m/s^2):", validate_positive_float)
-        self.deceleration_of_elevators_entry = self.get_entry("Deceleration of elevators (m/s^2):", validate_positive_float)
-        self.max_speed_of_elevators_entry = self.get_entry("Maximal speed of elevators (m/s):", validate_positive_float)
+        self.acceleration_of_elevators_entry = self.get_entry("Acceleration of elevators (m/s^2):", Util.validate_positive_float)
+        self.deceleration_of_elevators_entry = self.get_entry("Deceleration of elevators (m/s^2):", Util.validate_positive_float)
+        self.max_speed_of_elevators_entry = self.get_entry("Maximal speed of elevators (m/s):", Util.validate_positive_float)
 
-        self.door_opening_time_entry = self.get_entry("Time for doors to fully open (s):", validate_positive_float)
-        self.door_idle_time_entry = self.get_entry("Idle time before closing doors (s):", validate_positive_float)
+        self.door_opening_time_entry = self.get_entry("Time for doors to fully open (s):", Util.validate_positive_float)
+        self.door_idle_time_entry = self.get_entry("Idle time before closing doors (s):", Util.validate_positive_float)
 
-        self.organize_elevators_entry = self.get_entry("Organize elevators after idle (s):", validate_positive_float)
+        self.organize_elevators_entry = self.get_entry("Organize elevators after idle (s):", Util.validate_positive_float)
 
     def create_menu(self):
         self.menubar = tk.Menu(self.window)
@@ -112,10 +114,6 @@ class Launcher:
         self.door_idle_time_entry.delete(0, tk.END)
         self.organize_elevators_entry.delete(0, tk.END)
 
-    def on_new(self):
-        self.file_save = None
-        self.reset_components_to_default()
-
     def create_modal_window(self, close_action):
         self.window.wm_attributes("-disabled", True)
         self.modal_window = tk.Toplevel(self.window)
@@ -126,7 +124,7 @@ class Launcher:
     def show_heights_of_floors(self):
         self.create_modal_window(self.close_modal_window)
 
-        draw_label(self.modal_window, "Height", 0, 1, "w")
+        Util.draw_label(self.modal_window, "Height", 0, 1, "w")
 
         number_of_floors = int(self.number_of_floors_spinbox.get())
 
@@ -135,7 +133,7 @@ class Launcher:
         self.heights_of_floors_entry = [None] * number_of_floors
 
         for i in range(number_of_floors):
-            draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
+            Util.draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
 
             entry = tk.Entry(
                 self.modal_window,
@@ -146,7 +144,7 @@ class Launcher:
             if i == number_of_floors - 1:
                 entry.config(state="readonly")
             else:
-                entry.config(validatecommand=(entry.register(validate_positive_float), '%P'))
+                entry.config(validatecommand=(entry.register(Util.validate_positive_float), '%P'))
 
             entry.grid(row=i+1, column=1, sticky="w", pady=2)
 
@@ -163,7 +161,7 @@ class Launcher:
         self.elevators_floor_operation_checkbox = [[True] * number_of_floors] * number_of_elevators
 
         for i in range(number_of_floors):
-            draw_label(self.modal_window, str(number_of_floors-i-1) + ". floor:", i+1, 0, "w")
+            Util.draw_label(self.modal_window, str(number_of_floors-i-1) + ". floor:", i+1, 0, "w")
             for j in range(number_of_elevators):
                 checkbutton = ttk.Checkbutton(
                     self.modal_window,
@@ -182,7 +180,7 @@ class Launcher:
     def get_spinbox(self, text, spinbox_from, spinbox_to) -> ttk.Spinbox:
         self.row_index += 1
 
-        draw_label(self.window, text, self.row_index, self.col_index, "w")
+        Util.draw_label(self.window, text, self.row_index, self.col_index, "e")
 
         spinbox = ttk.Spinbox(self.window, width=5, from_=spinbox_from, to=spinbox_to, wrap=False, state="readonly")
 
@@ -193,7 +191,7 @@ class Launcher:
     def get_entry(self, text, validation) -> ttk.Entry:
         self.row_index += 1
 
-        draw_label(self.window, text, self.row_index, self.col_index, "w")
+        Util.draw_label(self.window, text, self.row_index, self.col_index, "e")
 
         entry = ttk.Entry(self.window, validate="key")
 
@@ -206,7 +204,7 @@ class Launcher:
     def draw_elevator_call_logic(self):
         self.row_index = self.row_index + 1
 
-        draw_label(self.window, "Elevator call logic:", self.row_index, self.col_index, "w")
+        Util.draw_label(self.window, "Elevator call logic:", self.row_index, self.col_index, "e")
 
         self.elevator_call_logic_combobox = ttk.Combobox(self.window, width=10, state="readonly")
         self.elevator_call_logic_combobox['values'] = ("SIMPLEX", "DUPLEX")
@@ -230,6 +228,10 @@ class Launcher:
         for i in range(number_of_floors, len(self.heights_of_floors)):
             self.heights_of_floors.pop()
 
+    def reset_heights_of_floors(self, number_of_floors):
+        for i in range(number_of_floors):
+            self.heights_of_floors[i].set(0)
+
     def adjust_elevators_floor_operation(self, number_of_elevators, number_of_floors):
         for i in range(len(self.elevators_floor_operation)):
             for j in range(len(self.elevators_floor_operation[i]), number_of_floors):
@@ -244,20 +246,61 @@ class Launcher:
         for i in range(number_of_elevators, len(self.elevators_floor_operation)):
             self.elevators_floor_operation.pop()
 
+    def reset_elevators_floor_operation(self, number_of_elevators, number_of_floors):
+        for i in range(number_of_elevators):
+            for j in range(number_of_floors):
+                self.elevators_floor_operation[i][j].set(True)
+
+    def save_to_file(self):
+        with open(self.file_save_name, "w") as file:
+            dict_to_json = dict()
+            dict_to_json["elevators"] = self.number_of_elevators_spinbox.get()
+            dict_to_json["floors"] = self.number_of_floors_spinbox.get()
+            dict_to_json["call logic"] = self.elevator_call_logic_combobox.get()
+            dict_to_json["capacity"] = self.elevator_capacity_entry.get()
+            dict_to_json["operate floors capacity"] = self.operate_floors_entry.get()
+            dict_to_json["acceleration"] = self.acceleration_of_elevators_entry.get()
+            dict_to_json["deceleration"] = self.deceleration_of_elevators_entry.get()
+            dict_to_json["maximal speed"] = self.max_speed_of_elevators_entry.get()
+            dict_to_json["door opening time"] = self.door_opening_time_entry.get()
+            dict_to_json["door idle time"] = self.door_idle_time_entry.get()
+            dict_to_json["organize after idle"] = self.organize_elevators_entry.get()
+
+            dict_to_json["heights of floors"] = [item.get() for item in self.heights_of_floors]
+
+            print(dict_to_json["heights of floors"])
+
+            file.write(json.dumps(dict_to_json, indent=4))
+            file.close()
+
+    def on_new(self):
+        self.file_save_name = None
+
+        self.reset_components_to_default()
+        self.elevator_call_logic_update()
+
+        number_of_floors = int(self.number_of_floors_spinbox.get())
+
+        self.adjust_heights_of_floors(number_of_floors)
+        self.reset_heights_of_floors(number_of_floors)
+
+        number_of_elevators = int(self.number_of_elevators_spinbox.get())
+
+        self.adjust_elevators_floor_operation(number_of_elevators, number_of_floors)
+        self.reset_elevators_floor_operation(number_of_elevators, number_of_floors)
+
     def on_save_as(self):
-        self.file_save = None
+        self.file_save_name = None
         self.on_save()
 
     def on_save(self):
-        if self.file_save is None:
-            self.file_save = filedialog.asksaveasfile(mode="w", filetypes=[("JSON", ".json")], defaultextension=".json")
+        if self.file_save_name is None:
+            file = filedialog.asksaveasfile(mode="w", filetypes=[("JSON", ".json")], defaultextension=".json")
+            if file is None:
+                return
+            self.file_save_name = file.name
 
-        if self.file_save is None:
-            return
-
-        my_dict = dict()
-        self.file_save.write(json.dumps(my_dict))
-        self.file_save.close()
+        self.save_to_file()
 
     def on_open(self):
         self.max_speed_of_elevators_entry.delete(0, tk.END) #delete all
