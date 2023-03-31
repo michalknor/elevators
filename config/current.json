@@ -1,0 +1,61 @@
+{
+    "elevators": "3",
+    "floors": "8",
+    "call logic": "DUPLEX",
+    "capacity": "123",
+    "operate floors capacity": "456",
+    "acceleration": "789",
+    "deceleration": "111",
+    "maximal speed": "222",
+    "door opening time": "333",
+    "door idle time": "444",
+    "organize after idle": "555",
+    "passenger queue file": "C:/Users/Kvakino/PycharmProjects/elevators/config/passengers.csv",
+    "heights of floors": [
+        "0",
+        "48",
+        "321",
+        "5",
+        "564",
+        "123",
+        "879",
+        "456"
+    ],
+    "elevators floor operation": [
+        [
+            true,
+            false,
+            true,
+            true,
+            true,
+            true,
+            false,
+            true
+        ],
+        [
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            true
+        ],
+        [
+            true,
+            true,
+            false,
+            true,
+            true,
+            true,
+            false,
+            true
+        ]
+    ],
+    "elevators organization": [
+        "4",
+        "2",
+        "3"
+    ]
+}
