@@ -19,17 +19,60 @@
 
 import json
 
-# Opening JSON file
-f = open('current.json')
-with open('current.json', "r") as f:
-# returns JSON object as
-# a dictionary
-    print(f)
-    data = json.load(f)
+# ACCELERATION = 0.5 / 1000
+# DECELERATION = 0.3 / 1000
+# MAX_SPEED = 2.3
+#
+# current_speed = 0
+# distance_traveled = 0
+#
+# for i in range(10*1000):
+#     if current_speed+ACCELERATION < MAX_SPEED:
+#         current_speed += ACCELERATION
+#     else:
+#         current_speed = MAX_SPEED
+#
+#     distance_traveled += current_speed
+#
+#     print(current_speed, distance_traveled)
+#
+# input()
+#
+# for i in range(10*1000):
+#     if current_speed+ACCELERATION < MAX_SPEED:
+#         current_speed += ACCELERATION
+#     else:
+#         current_speed = MAX_SPEED
+#
+#     distance_traveled += current_speed
+#
+#     print(current_speed, distance_traveled)
 
-# Iterating through the json
-# list
-    print(data)
+#
+# velocity = 20
+# distance = 0
+# while velocity > 0:
+#     distance += velocity/1000
+#     velocity -= 2/1000
+#
+# print(distance)
 
-# Closing file
-    f.close()
+import tkinter as tk
+import time
+
+root = tk.Tk()
+
+canvas = tk.Canvas(root, width=200, height=200)
+canvas.pack()
+
+text_id = canvas.create_text(100, 100, text="0", font=("Arial", 20, "bold"))
+
+def update_time():
+    millis = int(round(time.time() * 1000))
+    print(millis)
+    canvas.itemconfig(text_id, text=str(millis))
+    root.after(1, update_time)  # update every 10ms
+
+update_time()
+
+root.mainloop()
