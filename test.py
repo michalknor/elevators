@@ -13,16 +13,23 @@
 #     print(i, distance_traveled, current_speed)
 
 
-import tkinter as tk
-from tkinter import ttk
+# Python program to read
+# json file
 
 
 import json
 
-my_structure = {"A": '"5"', "B": 8, "C": [[i*j for j in range(8)] for i in range(8)]}
+# Opening JSON file
+f = open('current.json')
+with open('current.json', "r") as f:
+# returns JSON object as
+# a dictionary
+    print(f)
+    data = json.load(f)
 
-my_json = json.dumps(my_structure)
-print(my_json)
+# Iterating through the json
+# list
+    print(data)
 
-my_structure = json.loads(my_json)
-print(my_structure)
+# Closing file
+    f.close()
