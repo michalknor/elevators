@@ -56,23 +56,3 @@ import json
 #     velocity -= 2/1000
 #
 # print(distance)
-
-import tkinter as tk
-import time
-
-root = tk.Tk()
-
-canvas = tk.Canvas(root, width=200, height=200)
-canvas.pack()
-
-text_id = canvas.create_text(100, 100, text="0", font=("Arial", 20, "bold"))
-
-def update_time():
-    millis = int(round(time.time() * 1000))
-    print(millis)
-    canvas.itemconfig(text_id, text=str(millis))
-    root.after(1, update_time)  # update every 10ms
-
-update_time()
-
-root.mainloop()

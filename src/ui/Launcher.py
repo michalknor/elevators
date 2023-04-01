@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import json
-import src.ui.Util as Util
+import src.util.Ui as Util
+import src.util.Regex as Regex
 
 
 DEFAULT_NUMBER_OF_ELEVATORS = 3
@@ -64,24 +65,24 @@ class Launcher:
         self.draw_elevator_call_logic()
 
         self.elevator_capacity_entry = self.get_entry("Elevator capacity (person):",
-                                                      Util.validate_positive_integer)
+                                                      Regex.validate_positive_integer)
         self.operate_floors_entry = self.get_entry("Operate if remaining capacity is at least (person):",
-                                                   Util.validate_non_negative_integer)
+                                                   Regex.validate_non_negative_integer)
 
         self.acceleration_of_elevators_entry = self.get_entry("Acceleration of elevators (m/s^2):",
-                                                              Util.validate_positive_float)
+                                                              Regex.validate_positive_float)
         self.deceleration_of_elevators_entry = self.get_entry("Deceleration of elevators (m/s^2):",
-                                                              Util.validate_positive_float)
+                                                              Regex.validate_positive_float)
         self.max_speed_of_elevators_entry = self.get_entry("Maximal speed of elevators (m/s):",
-                                                           Util.validate_positive_float)
+                                                           Regex.validate_positive_float)
 
         self.door_opening_time_entry = self.get_entry("Time for doors to fully open (s):",
-                                                      Util.validate_positive_float)
+                                                      Regex.validate_positive_float)
         self.door_idle_time_entry = self.get_entry("Idle time before closing doors (s):",
-                                                   Util.validate_positive_float)
+                                                   Regex.validate_positive_float)
 
         self.organize_elevators_entry = self.get_entry("Organize elevators after idle (s):",
-                                                       Util.validate_positive_float)
+                                                       Regex.validate_positive_float)
 
         self.row_index += 1
         ttk.Separator(self.window, orient='horizontal').grid(row=self.row_index, column=0,
@@ -158,7 +159,7 @@ class Launcher:
             if i == number_of_floors - 1:
                 entry.config(state="readonly")
             else:
-                entry.config(validatecommand=(entry.register(Util.validate_positive_float), '%P'))
+                entry.config(validatecommand=(entry.register(Regex.validate_positive_float), '%P'))
 
             entry.grid(row=i+1, column=1, sticky="w", pady=2)
 
@@ -173,7 +174,7 @@ class Launcher:
         self.adjust_elevators_floor_operation(number_of_elevators, number_of_floors)
 
         for i in range(number_of_floors):
-            Util.draw_label(self.modal_window, str(number_of_floors-i-1) + ". floor:", i+1, 0, "w")
+            Util.draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
             for j in range(number_of_elevators):
                 checkbutton = ttk.Checkbutton(
                     self.modal_window,
@@ -202,7 +203,7 @@ class Launcher:
                 textvariable=self.elevators_organization[i]
             )
 
-            entry.config(validatecommand=(entry.register(Util.validate_non_negative_integer), '%P'))
+            entry.config(validatecommand=(entry.register(Regex.validate_non_negative_integer), '%P'))
 
             entry.grid(row=1, column=i+1, sticky="w", pady=2)
 
