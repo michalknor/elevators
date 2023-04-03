@@ -42,7 +42,7 @@ class Elevator:
         self.status = STATUS["idle"]
 
         self.destinations = []
-        self.calls = set()
+        self.calls = {"up": set(), "down": set()}
         self.persons = []
 
         self.canvas_objects = []
