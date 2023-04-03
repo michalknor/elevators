@@ -4,6 +4,7 @@ from tkinter import filedialog
 import json
 import src.util.Ui as Util
 import src.util.Regex as Regex
+import src.ui.Simulation as Simulation
 
 
 DEFAULT_NUMBER_OF_ELEVATORS = 3
@@ -52,6 +53,16 @@ class Launcher:
 
         self.window.resizable(False, False)
         self.window.eval('tk::PlaceWindow . center')
+
+        self.file_save_name = "C:/Users/Kvakino/PycharmProjects/elevators/config/current.json"
+
+        # remove
+        with open(self.file_save_name, "r") as file:
+            data = json.load(file)
+            file.close()
+            self.load_data(data)
+        self.run_simulation()
+        # remove
 
         self.window.mainloop()
 
@@ -112,7 +123,7 @@ class Launcher:
 
         self.menubar.add_cascade(label="Edit", menu=self.menu_edit)
 
-        self.menubar.add_cascade(label="Run")
+        self.menubar.add_cascade(label="Run", command=self.run_simulation)
 
         self.window.config(menu=self.menubar)
 
@@ -180,6 +191,8 @@ class Launcher:
                     self.modal_window,
                     variable=self.elevators_floor_operation[j][number_of_floors-i-1]
                 )
+                if i == number_of_floors - 1:
+                    checkbutton.config(state="disabled")
 
                 checkbutton.grid(row=i+1, column=j+1, sticky="w", pady=2)
 
@@ -302,30 +315,35 @@ class Launcher:
             for j in range(number_of_floors):
                 self.elevators_floor_operation[i][j].set(True)
 
+    def get_config(self) -> dict:
+        config = dict()
+        config["elevators"] = self.number_of_elevators_spinbox.get()
+        config["floors"] = self.number_of_floors_spinbox.get()
+        config["call logic"] = self.elevator_call_logic_combobox.get()
+        config["capacity"] = self.elevator_capacity_entry.get()
+        config["operate floors capacity"] = self.operate_floors_entry.get()
+        config["acceleration"] = self.acceleration_of_elevators_entry.get()
+        config["deceleration"] = self.deceleration_of_elevators_entry.get()
+        config["maximal speed"] = self.max_speed_of_elevators_entry.get()
+        config["door opening time"] = self.door_opening_time_entry.get()
+        config["door idle time"] = self.door_idle_time_entry.get()
+        config["organize after idle"] = self.organize_elevators_entry.get()
+        config["passenger queue file"] = self.passenger_queue_entry.get()
+
+        config["heights of floors"] = [item.get() for item in self.heights_of_floors]
+        config["elevators floor operation"] = [
+            [item2.get() for item2 in item] for item in self.elevators_floor_operation
+        ]
+
+        config["elevators organization"] = [item.get() for item in self.elevators_organization]
+
+        return config
+
     def save_to_file(self):
         with open(self.file_save_name, "w") as file:
-            dict_to_json = dict()
-            dict_to_json["elevators"] = self.number_of_elevators_spinbox.get()
-            dict_to_json["floors"] = self.number_of_floors_spinbox.get()
-            dict_to_json["call logic"] = self.elevator_call_logic_combobox.get()
-            dict_to_json["capacity"] = self.elevator_capacity_entry.get()
-            dict_to_json["operate floors capacity"] = self.operate_floors_entry.get()
-            dict_to_json["acceleration"] = self.acceleration_of_elevators_entry.get()
-            dict_to_json["deceleration"] = self.deceleration_of_elevators_entry.get()
-            dict_to_json["maximal speed"] = self.max_speed_of_elevators_entry.get()
-            dict_to_json["door opening time"] = self.door_opening_time_entry.get()
-            dict_to_json["door idle time"] = self.door_idle_time_entry.get()
-            dict_to_json["organize after idle"] = self.organize_elevators_entry.get()
-            dict_to_json["passenger queue file"] = self.passenger_queue_entry.get()
+            config = self.get_config()
 
-            dict_to_json["heights of floors"] = [item.get() for item in self.heights_of_floors]
-            dict_to_json["elevators floor operation"] = [
-                [item2.get() for item2 in item] for item in self.elevators_floor_operation
-            ]
-
-            dict_to_json["elevators organization"] = [item.get() for item in self.elevators_organization]
-
-            file.write(json.dumps(dict_to_json, indent=4))
+            file.write(json.dumps(config, indent=4))
             file.close()
 
     def load_data(self, data: dict):
@@ -398,9 +416,13 @@ class Launcher:
         if path == "":
             return
 
-        self.file_save_name = path
-
         with open(self.file_save_name, "r") as file:
             data = json.load(file)
             file.close()
             self.load_data(data)
+
+    def run_simulation(self):
+        self.create_modal_window(self.close_modal_window)
+        Simulation.Simulation(self.modal_window, self.get_config())
+        self.center_modal_window()
+

@@ -56,3 +56,19 @@ import json
 #     velocity -= 2/1000
 #
 # print(distance)
+
+import random
+
+for j in range(10):
+    marbles = [False, False, False]
+
+    for i in range(3):
+        marbles[random.randrange(3)] = True
+
+    print(marbles)
+
+
+a = 1/3*1/3*1/3
+b = 1/3*2/3*2/3
+c = 1/3*1/3*1/3
+print(a,b,c)
