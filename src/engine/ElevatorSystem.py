@@ -85,24 +85,33 @@ class ElevatorSystem:
             elevator.draw(self.heights_of_floors[-1])
 
     def tick(self, current_time):
+        for elevator in self.elevators:
+            elevator.tick()
+
         if current_time in self.passengers:
             for person in self.passengers[current_time]:
                 self.call_elevator(person, person.current_floor, person.final_floor, person.mannerly)
+
+        for floor in self.floors:
+            floor.tick()
 
     def call_elevator(self, person: Person, current_floor: int, final_floor: int, mannerly: bool):
         direction = "down" if final_floor < current_floor else "up"
 
         if self.call_logic == "SIMPLEX":
             if mannerly:
-                self.floors[current_floor].call_mannerly(direction)
+                index = self.floors[current_floor].call_mannerly(direction)
             else:
-                self.floors[current_floor].call_random(direction)
+                index = self.floors[current_floor].call_random(direction)
+
+            self.elevators[index].get_next_floor()
 
         elif self.call_logic == "DUPLEX":
             for i in self.floors[current_floor].canvas_objects[direction]:
                 self.canvas.itemconfig(self.floors[current_floor].canvas_objects[direction][i], fill="green")
                 self.floors[current_floor].called[direction][i] = True
 
+        person.status = "waiting"
         self.floors[current_floor].persons[direction].append(person)
         self.canvas.itemconfig(self.floors[current_floor].waiting_text,
                                text=str(int(self.canvas.itemcget(self.floors[current_floor].waiting_text, "text"))+1))

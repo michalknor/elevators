@@ -59,16 +59,15 @@ import json
 
 import random
 
-for j in range(10):
-    marbles = [False, False, False]
 
-    for i in range(3):
-        marbles[random.randrange(3)] = True
-
-    print(marbles)
+def calculate_distance(initial_speed, acceleration, time):
+    distance = (initial_speed * time) + (0.5 * acceleration * time**2)
+    return distance
 
 
-a = 1/3*1/3*1/3
-b = 1/3*2/3*2/3
-c = 1/3*1/3*1/3
-print(a,b,c)
+print("The distance traveled is:", calculate_distance(0, 2, 0.001)*1000, calculate_distance(0, 2, 1))
+
+distance_traveled = 0
+for i in range(1000):
+    distance_traveled += calculate_distance(2*0.001*i, 2, 0.001)
+print("The distance traveled is:", distance_traveled)

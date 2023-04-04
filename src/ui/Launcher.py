@@ -54,13 +54,23 @@ class Launcher:
         self.window.resizable(False, False)
         self.window.eval('tk::PlaceWindow . center')
 
-        self.file_save_name = "C:/Users/Kvakino/PycharmProjects/elevators/config/current.json"
-
         # remove
+        import os
+        script_dir = os.path.dirname(__file__)
+        rel_path = "../../config/current.json"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        self.file_save_name = abs_file_path
+
+        rel_path = "../../config/passengers.csv"
+        abs_file_path = os.path.join(script_dir, rel_path)
+
         with open(self.file_save_name, "r") as file:
             data = json.load(file)
             file.close()
             self.load_data(data)
+
+        Util.set_value_entry(self.passenger_queue_entry, abs_file_path)
+
         self.run_simulation()
         # remove
 
@@ -258,7 +268,7 @@ class Launcher:
         Util.draw_label(self.window, "Elevator call logic:", self.row_index, self.col_index, "e")
 
         self.elevator_call_logic_combobox = ttk.Combobox(self.window, width=10, state="readonly")
-        self.elevator_call_logic_combobox['values'] = ("SIMPLEX", "DUPLEX")
+        self.elevator_call_logic_combobox['values'] = ("SIMPLEX", "MULTIPLEX")
         self.elevator_call_logic_combobox.grid(row=self.row_index, column=self.col_index+1, sticky="w", pady=2)
         self.elevator_call_logic_combobox.bind("<<ComboboxSelected>>", self.elevator_call_logic_update)
         self.elevator_call_logic_combobox.current(DEFAULT_ELEVATOR_LOGIC)
@@ -269,7 +279,7 @@ class Launcher:
             self.menu_edit.entryconfig("Organize elevators after idle", state="disabled")
             return
 
-        if self.elevator_call_logic_combobox.get() == "DUPLEX":
+        if self.elevator_call_logic_combobox.get() == "MULTIPLEX":
             self.organize_elevators_entry.config(state="normal")
             self.menu_edit.entryconfig("Organize elevators after idle", state="normal")
             return

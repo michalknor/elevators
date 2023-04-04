@@ -45,13 +45,23 @@ class Floor:
         self.elevator_system.canvas.create_text(5, y-28, text="waiting:", anchor="w")
         self.waiting_text = self.elevator_system.canvas.create_text(50, y-28, text="0", anchor="w")
 
-    def call_mannerly(self, direction: str):
+    def call_mannerly(self, direction: str) -> int or None:
         for key in self.canvas_objects[direction]:
             if self.called[direction][key]:
-                return
-        self.call_random(direction)
+                return None
+        return self.call_random(direction)
 
-    def call_random(self, direction: str):
+    def call_random(self, direction: str) -> int:
         i = random.randrange(len(self.called[direction]))
         self.called[direction][i] = True
         self.elevator_system.canvas.itemconfig(self.canvas_objects[direction][i], fill="green")
+
+        self.elevator_system.elevators[i].calls[direction].add(self.floor)
+
+        return i
+
+
+    def tick(self):
+        for direction in self.persons:
+            for person in self.persons[direction]:
+                person.tick()
