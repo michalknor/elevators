@@ -60,14 +60,18 @@ import json
 import random
 
 
-def calculate_distance(initial_speed, acceleration, time):
-    distance = (initial_speed * time) + (0.5 * acceleration * time**2)
-    return distance
+# def calculate_distance(initial_speed, acceleration, time):
+#     distance = (initial_speed * time) + (0.5 * acceleration * time**2)
+#     return distance
+#
+#
+# print("The distance traveled is:", calculate_distance(0, 2, 0.001)*1000, calculate_distance(0, 2, 1))
+#
+# distance_traveled = 0
+# for i in range(1000):
+#     distance_traveled += calculate_distance(2*0.001*i, 2, 0.001)
+# print("The distance traveled is:", distance_traveled)
 
 
-print("The distance traveled is:", calculate_distance(0, 2, 0.001)*1000, calculate_distance(0, 2, 1))
+import random
 
-distance_traveled = 0
-for i in range(1000):
-    distance_traveled += calculate_distance(2*0.001*i, 2, 0.001)
-print("The distance traveled is:", distance_traveled)

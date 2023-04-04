@@ -35,7 +35,7 @@ class Elevator:
         self.acceleration = float(acceleration)
         self.deceleration = float(deceleration)
         self.maximal_speed = float(maximal_speed)
-        self.door_opening_time = door_opening_time
+        self.door_opening_time = float(door_opening_time) * 1000
         self.door_idle_time = door_idle_time
 
         self.speed = 0
@@ -76,12 +76,19 @@ class Elevator:
     def tick(self):
         match self.status:
             case "idle":
+                #self.go_to_next_floor()
                 self.change_status("up")
-                return
             case "up":
                 self.move()
             case "down":
-                self.move_down()
+                self.move()
+            # case "opening doors":
+            #     self.opened_doors += se
+            # case "waiting":
+            #
+            # case "closing doors":
+            #
+            # case "reorganizing":
 
     def move(self):
         y_offset = self.speed * 0.001 + 0.5 * self.acceleration * 0.001**2
@@ -135,3 +142,6 @@ class Elevator:
             next_floors = [call for call in self.calls[self.direction]]
             if next_floors:
                 return {"index": min(next_floors), "direction": "down"}
+
+    def go_to_next_floor(self):
+        ...
