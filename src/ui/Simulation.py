@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import json
-import src.util.Ui as Util
+import src.util.Ui as Ui
 import src.util.Regex as Regex
 import src.engine.ElevatorSystem as ElevatorSystem
 
@@ -47,9 +47,7 @@ class Simulation:
         self.canvas.create_text(20, 20, text="time:", anchor="w")
         self.text_time = self.canvas.create_text(50, 20, text=":".join(self.str_time), anchor="w")
 
-        #self.slider = tk.Scale(root, from_=0, to=100, orient=tk.HORIZONTAL)
-
-        self.speeds = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000]
+        self.speeds = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
         self.current_speed = 1
         self.speed_scale = tk.Scale(self.window, from_=0, to=len(self.speeds)-1,
                                     command=self.update_value, showvalue=False, orient="horizontal", label="speed: 1")

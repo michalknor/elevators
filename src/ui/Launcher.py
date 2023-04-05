@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import json
-import src.util.Ui as Util
+import src.util.Ui as Ui
 import src.util.Regex as Regex
 import src.ui.Simulation as Simulation
 
@@ -69,7 +69,7 @@ class Launcher:
             file.close()
             self.load_data(data)
 
-        Util.set_value_entry(self.passenger_queue_entry, abs_file_path)
+        Ui.set_value_entry(self.passenger_queue_entry, abs_file_path)
 
         self.run_simulation()
         # remove
@@ -158,6 +158,7 @@ class Launcher:
 
     def center_modal_window(self):
         self.window.eval(f'tk::PlaceWindow {str(self.modal_window)} center')
+        Ui.set_icon(self.modal_window)
 
     def show_heights_of_floors(self):
         self.create_modal_window(self.close_modal_window)
@@ -166,10 +167,10 @@ class Launcher:
 
         self.adjust_heights_of_floors(number_of_floors)
 
-        Util.draw_label(self.modal_window, "Height (m)", 0, 1, "w")
+        Ui.draw_label(self.modal_window, "Height (m)", 0, 1, "w")
 
         for i in range(number_of_floors):
-            Util.draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
+            Ui.draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
 
             entry = tk.Entry(
                 self.modal_window,
@@ -195,7 +196,7 @@ class Launcher:
         self.adjust_elevators_floor_operation(number_of_elevators, number_of_floors)
 
         for i in range(number_of_floors):
-            Util.draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
+            Ui.draw_label(self.modal_window, str(number_of_floors - i - 1) + ". floor:", i + 1, 0, "w")
             for j in range(number_of_elevators):
                 checkbutton = ttk.Checkbutton(
                     self.modal_window,
@@ -215,10 +216,10 @@ class Launcher:
 
         self.adjust_elevators_organization(number_of_elevators)
 
-        Util.draw_label(self.modal_window, "Floor", 1, 0, "w")
+        Ui.draw_label(self.modal_window, "Floor", 1, 0, "w")
 
         for i in range(number_of_elevators):
-            Util.draw_label(self.modal_window, str(i + 1) + ". elevator", 0, i + 1, "nesw")
+            Ui.draw_label(self.modal_window, str(i + 1) + ". elevator", 0, i + 1, "nesw")
 
             entry = tk.Entry(
                 self.modal_window,
@@ -240,7 +241,7 @@ class Launcher:
     def get_spinbox(self, text: str, spinbox_from, spinbox_to) -> ttk.Spinbox:
         self.row_index += 1
 
-        Util.draw_label(self.window, text, self.row_index, self.col_index, "e")
+        Ui.draw_label(self.window, text, self.row_index, self.col_index, "e")
 
         spinbox = ttk.Spinbox(self.window, width=5, from_=spinbox_from, to=spinbox_to, wrap=False, state="readonly")
 
@@ -251,7 +252,7 @@ class Launcher:
     def get_entry(self, text: str, validation=None) -> ttk.Entry:
         self.row_index += 1
 
-        Util.draw_label(self.window, text, self.row_index, self.col_index, "e")
+        Ui.draw_label(self.window, text, self.row_index, self.col_index, "e")
 
         entry = ttk.Entry(self.window, validate="key")
 
@@ -265,7 +266,7 @@ class Launcher:
     def draw_elevator_call_logic(self):
         self.row_index = self.row_index + 1
 
-        Util.draw_label(self.window, "Elevator call logic:", self.row_index, self.col_index, "e")
+        Ui.draw_label(self.window, "Elevator call logic:", self.row_index, self.col_index, "e")
 
         self.elevator_call_logic_combobox = ttk.Combobox(self.window, width=10, state="readonly")
         self.elevator_call_logic_combobox['values'] = ("SIMPLEX", "MULTIPLEX")
@@ -363,15 +364,15 @@ class Launcher:
 
         self.elevator_call_logic_update()
 
-        Util.set_value_entry(self.elevator_capacity_entry, data["capacity"])
-        Util.set_value_entry(self.operate_floors_entry, data["operate floors capacity"])
-        Util.set_value_entry(self.acceleration_of_elevators_entry, data["acceleration"])
-        Util.set_value_entry(self.deceleration_of_elevators_entry, data["deceleration"])
-        Util.set_value_entry(self.max_speed_of_elevators_entry, data["maximal speed"])
-        Util.set_value_entry(self.door_opening_time_entry, data["door opening time"])
-        Util.set_value_entry(self.door_idle_time_entry, data["door idle time"])
-        Util.set_value_entry(self.organize_elevators_entry, data["organize after idle"])
-        Util.set_value_entry(self.passenger_queue_entry, data["passenger queue file"])
+        Ui.set_value_entry(self.elevator_capacity_entry, data["capacity"])
+        Ui.set_value_entry(self.operate_floors_entry, data["operate floors capacity"])
+        Ui.set_value_entry(self.acceleration_of_elevators_entry, data["acceleration"])
+        Ui.set_value_entry(self.deceleration_of_elevators_entry, data["deceleration"])
+        Ui.set_value_entry(self.max_speed_of_elevators_entry, data["maximal speed"])
+        Ui.set_value_entry(self.door_opening_time_entry, data["door opening time"])
+        Ui.set_value_entry(self.door_idle_time_entry, data["door idle time"])
+        Ui.set_value_entry(self.organize_elevators_entry, data["organize after idle"])
+        Ui.set_value_entry(self.passenger_queue_entry, data["passenger queue file"])
 
         self.heights_of_floors = [tk.StringVar(value=value) for value in data["heights of floors"]]
 
@@ -435,4 +436,3 @@ class Launcher:
         self.create_modal_window(self.close_modal_window)
         Simulation.Simulation(self.modal_window, self.get_config())
         self.center_modal_window()
-

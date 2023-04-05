@@ -10,3 +10,7 @@ def draw_label(window: tk.Tk, text: str, row_index: int, col_index: int, sticky:
 def set_value_entry(entry: ttk.Entry, value: str):
     entry.delete(0, tk.END)
     entry.insert(0, value)
+
+
+def set_icon(window):
+    window.iconbitmap("src/ui/elevator.ico")
