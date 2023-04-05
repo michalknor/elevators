@@ -1,6 +1,6 @@
 {
     "elevators": "3",
-    "floors": "10",
+    "floors": "8",
     "call logic": "SIMPLEX",
     "capacity": "10",
     "operate floors capacity": "",
@@ -13,21 +13,17 @@
     "passenger queue file": "C:\\Users\\Michal\\PycharmProjects\\elevators\\src\\ui\\../../config/passengers.csv",
     "heights of floors": [
         "0",
-        "3",
-        "6",
-        "9",
-        "12",
-        "15",
+        "4.8",
+        "8",
+        "11.3",
+        "14.7",
         "18",
-        "21",
-        "24",
-        "27"
+        "21.3",
+        "24.6"
     ],
     "elevators floor operation": [
         [
             true,
-            false,
-            false,
             true,
             true,
             true,
@@ -41,8 +37,6 @@
             false,
             false,
             false,
-            false,
-            false,
             true,
             true,
             false,
@@ -50,8 +44,6 @@
         ],
         [
             true,
-            false,
-            false,
             false,
             false,
             false,

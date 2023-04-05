@@ -29,7 +29,7 @@ class ElevatorSystem:
 
         self.organize_after_idle = config["organize after idle"]
 
-        self.heights_of_floors = [int(height) for height in config["heights of floors"]]
+        self.heights_of_floors = [float(height) for height in config["heights of floors"]]
         self.elevators_floor_operation = config["elevators floor operation"]
 
         self.elevators_organization = [int(floor) for floor in config["elevators organization"]]
@@ -100,13 +100,17 @@ class ElevatorSystem:
 
         if self.call_logic == "SIMPLEX":
             if mannerly:
-                index = self.floors[current_floor].call_mannerly(direction)
+                called_elevator_index = self.floors[current_floor].call_mannerly(direction)
             else:
-                index = self.floors[current_floor].call_random(direction)
+                called_elevator_index = self.floors[current_floor].call_random(direction)
 
-            self.elevators[index].get_next_floor()
+            if called_elevator_index is None:
+                return
 
-        elif self.call_logic == "DUPLEX":
+            self.elevators[called_elevator_index].next_floor = self.elevators[called_elevator_index].get_next_floor()
+            print(self.elevators[called_elevator_index].next_floor)
+
+        elif self.call_logic == "MULTIPLEX":
             for i in self.floors[current_floor].canvas_objects[direction]:
                 self.canvas.itemconfig(self.floors[current_floor].canvas_objects[direction][i], fill="green")
                 self.floors[current_floor].called[direction][i] = True

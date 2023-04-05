@@ -8,7 +8,9 @@ import src.engine.ElevatorSystem as ElevatorSystem
 HEIGHT = 2
 WIDTH = 1.5
 
-DIRECTION = {"up": -1, "idle": 0, "down": -1}
+DIRECTION = {"up": -1,
+             "idle": 0,
+             "down": -1}
 STATUS = {"idle": "idle",
           "up": "going up",
           "down": "going down",
@@ -25,8 +27,6 @@ class Elevator:
         self.elevator_system = elevator_system
         self.index = index
 
-        self.next_floor_index = None
-
         self.current_floor_index = self.elevator_system.elevators_organization[self.index]
 
         self.elevator_height = self.elevator_system.heights_of_floors[self.current_floor_index]
@@ -35,11 +35,13 @@ class Elevator:
         self.acceleration = float(acceleration)
         self.deceleration = float(deceleration)
         self.maximal_speed = float(maximal_speed)
-        self.door_opening_time = float(door_opening_time) * 1000
+        self.door_opening_time = float(door_opening_time)
         self.door_idle_time = door_idle_time
 
         self.speed = 0
         self.opened_doors = 0
+
+        self.next_person_countdown = 1000
 
         self.direction = "up"
         self.status = "idle"
@@ -48,7 +50,7 @@ class Elevator:
         self.calls = {"up": set(), "down": set()}
         self.persons = []
 
-        self.next_floor = {"index": self.elevator_system.elevators_organization[self.index], "direction": "idle"}
+        self.next_floor = {"index": self.current_floor_index, "direction": "idle"}
 
         self.canvas_elevator_rectangle = None
         self.canvas_elevator_status_text = None
@@ -59,15 +61,15 @@ class Elevator:
         y = (max_height - self.elevator_height) * 25 - HEIGHT * 25 + 150
 
         self.canvas_elevator_rectangle = self.elevator_system.canvas.create_rectangle(x,
-                                                                                       y,
-                                                                                       x + WIDTH * 25,
-                                                                                       y + HEIGHT * 25,
-                                                                                       fill='gray',
-                                                                                       width=2)
+                                                                                      y,
+                                                                                      x + WIDTH * 25,
+                                                                                      y + HEIGHT * 25,
+                                                                                      fill='gray',
+                                                                                      width=2)
 
         self.canvas_elevator_status_text = self.elevator_system.canvas.create_text(x + WIDTH * 25 / 2,
-                                                                             y + HEIGHT * 25 / 2,
-                                                                             text=str(len(self.persons)))
+                                                                                   y + HEIGHT * 25 / 2,
+                                                                                   text=str(len(self.persons)))
 
         self.canvas_number_of_passengers_text = self.elevator_system.canvas.create_text(x + WIDTH * 25 / 2,
                                                                                         y - 10,
@@ -76,18 +78,25 @@ class Elevator:
     def tick(self):
         match self.status:
             case "idle":
-                #self.go_to_next_floor()
-                self.change_status("up")
+                self.go_to_next_floor()
             case "up":
                 self.move()
             case "down":
                 self.move()
-            # case "opening doors":
-            #     self.opened_doors += se
-            # case "waiting":
-            #
-            # case "closing doors":
-            #
+            case "opening doors":
+                if self.door_opening_time > self.opened_doors:
+                    self.opened_doors += 0.001
+                    return
+                self.change_status("waiting")
+            case "waiting":
+                self.next_person_countdown -= 1
+            case "closing doors":
+                if self.door_opening_time > self.opened_doors:
+                    self.opened_doors -= 0.001
+                    return
+                #todo
+                #self.change_status("waiting")
+
             # case "reorganizing":
 
     def move(self):
@@ -144,4 +153,8 @@ class Elevator:
                 return {"index": min(next_floors), "direction": "down"}
 
     def go_to_next_floor(self):
-        ...
+        if self.next_floor["direction"] == "idle":
+            return
+
+        if self.next_floor["index"] == self.current_floor_index:
+            self.change_status("opening doors")

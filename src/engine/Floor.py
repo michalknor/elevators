@@ -48,18 +48,20 @@ class Floor:
     def call_mannerly(self, direction: str) -> int or None:
         for key in self.canvas_objects[direction]:
             if self.called[direction][key]:
+                print(self.called[direction][key])
                 return None
         return self.call_random(direction)
 
-    def call_random(self, direction: str) -> int:
+    def call_random(self, direction: str) -> int or None:
         i = random.randrange(len(self.called[direction]))
+        if self.called[direction][i]:
+            return None
         self.called[direction][i] = True
         self.elevator_system.canvas.itemconfig(self.canvas_objects[direction][i], fill="green")
 
         self.elevator_system.elevators[i].calls[direction].add(self.floor)
 
         return i
-
 
     def tick(self):
         for direction in self.persons:
