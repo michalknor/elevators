@@ -40,3 +40,6 @@ class Person:
                 self.time_waiting_for_elevator += 1
             case "in elevator":
                 self.time_in_elevator += 1
+
+    def set_status(self, status):
+        self.status = status

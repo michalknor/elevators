@@ -54,14 +54,14 @@ class ElevatorSystem:
                 if not possible_up:
                     self.floors[j].possible_up[i] = False
                 else:
-                    self.floors[j].called["up"][i] = False
+                    self.floors[j].calls["up"][i] = False
 
                 possible_up = True
 
                 if self.floors[j].floor == 0:
                     self.floors[j].possible_down[i] = False
                 else:
-                    self.floors[j].called["down"][i] = False
+                    self.floors[j].calls["down"][i] = False
 
         with open(config["passenger queue file"], "r") as file:
             reader = csv.reader(file)
@@ -80,9 +80,9 @@ class ElevatorSystem:
 
     def draw(self):
         for floor in self.floors:
-            floor.draw(self.heights_of_floors[-1])
+            floor.draw()
         for elevator in self.elevators:
-            elevator.draw(self.heights_of_floors[-1])
+            elevator.draw()
 
     def tick(self, current_time):
         for elevator in self.elevators:
@@ -100,22 +100,17 @@ class ElevatorSystem:
 
         if self.call_logic == "SIMPLEX":
             if mannerly:
-                called_elevator_index = self.floors[current_floor].call_mannerly(direction)
+                elevator_index = self.floors[current_floor].call_mannerly(direction)
             else:
-                called_elevator_index = self.floors[current_floor].call_random(direction)
+                elevator_index = self.floors[current_floor].call_random(direction)
 
-            if called_elevator_index is None:
-                return
-
-            self.elevators[called_elevator_index].next_floor = self.elevators[called_elevator_index].get_next_floor()
-            print(self.elevators[called_elevator_index].next_floor)
+            if elevator_index is not None:
+                self.elevators[elevator_index].next_floor = self.elevators[elevator_index].get_next_floor()
+                self.elevators[elevator_index].go_to_next_floor()
 
         elif self.call_logic == "MULTIPLEX":
             for i in self.floors[current_floor].canvas_objects[direction]:
                 self.canvas.itemconfig(self.floors[current_floor].canvas_objects[direction][i], fill="green")
-                self.floors[current_floor].called[direction][i] = True
+                self.floors[current_floor].calls[direction][i] = True
 
-        person.status = "waiting"
-        self.floors[current_floor].persons[direction].append(person)
-        self.canvas.itemconfig(self.floors[current_floor].waiting_text,
-                               text=str(int(self.canvas.itemcget(self.floors[current_floor].waiting_text, "text"))+1))
+        self.floors[current_floor].add_person(direction, person)

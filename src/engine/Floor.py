@@ -6,6 +6,7 @@ import random
 
 import src.util.Ui as Util
 import src.engine.ElevatorSystem as ElevatorSystem
+import src.engine.Person as Person
 
 
 class Floor:
@@ -16,16 +17,14 @@ class Floor:
         self.possible_up = {i: True for i in range(self.elevator_system.number_of_elevators)}
         self.possible_down = {i: True for i in range(self.elevator_system.number_of_elevators)}
 
-        self.called = {"up": dict(), "down": dict()}
-
         self.persons = {"up": [], "down": []}
         self.waiting_text = None
 
         self.canvas_objects = {"up": dict(), "down": dict()}
         self.calls = {"up": dict(), "down": dict()}
 
-    def draw(self, max_height):
-        y = (max_height - self.elevator_system.heights_of_floors[self.floor]) * 25 + 150
+    def draw(self):
+        y = (self.elevator_system.heights_of_floors[-1] - self.elevator_system.heights_of_floors[self.floor]) * 25 + 150
         for i in range(self.elevator_system.number_of_elevators):
             if self.possible_up[i]:
                 self.canvas_objects["up"][i] = self.elevator_system.canvas.create_polygon(100 + i * 150, y - 41,
@@ -46,17 +45,26 @@ class Floor:
         self.waiting_text = self.elevator_system.canvas.create_text(50, y-28, text="0", anchor="w")
 
     def call_mannerly(self, direction: str) -> int or None:
-        for key in self.canvas_objects[direction]:
-            if self.called[direction][key]:
-                print(self.called[direction][key])
+        for key in self.calls[direction]:
+            if self.calls[direction][key]:
                 return None
         return self.call_random(direction)
 
     def call_random(self, direction: str) -> int or None:
-        i = random.randrange(len(self.called[direction]))
-        if self.called[direction][i]:
+        for elevator in self.elevator_system.elevators:
+            if elevator.current_floor_index == self.floor:
+                match elevator.status:
+                    case "waiting for close" | "closing doors":
+                        elevator.set_status("loading")
+                        return None
+                    case "loading" | "unloading" | "opening doors":
+                        return None
+
+        i = random.randrange(len(self.calls[direction]))
+        i = 0
+        if self.calls[direction][i]:
             return None
-        self.called[direction][i] = True
+        self.calls[direction][i] = True
         self.elevator_system.canvas.itemconfig(self.canvas_objects[direction][i], fill="green")
 
         self.elevator_system.elevators[i].calls[direction].add(self.floor)
@@ -67,3 +75,16 @@ class Floor:
         for direction in self.persons:
             for person in self.persons[direction]:
                 person.tick()
+
+    def add_person(self, direction: str, person):
+        person.set_status("waiting")
+
+        self.persons[direction].append(person)
+        self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
+            int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) + 1))
+
+    def remove_person(self, direction: str) -> Person:
+        self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
+            int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) - 1))
+        return self.persons[direction].pop(0)
+
