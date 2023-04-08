@@ -100,13 +100,9 @@ class ElevatorSystem:
 
         if self.call_logic == "SIMPLEX":
             if mannerly:
-                elevator_index = self.floors[current_floor].call_mannerly(direction)
+                self.floors[current_floor].call_mannerly(direction)
             else:
-                elevator_index = self.floors[current_floor].call_random(direction)
-
-            if elevator_index is not None:
-                self.elevators[elevator_index].next_floor = self.elevators[elevator_index].get_next_floor()
-                self.elevators[elevator_index].go_to_next_floor()
+                self.floors[current_floor].call_all(direction)
 
         elif self.call_logic == "MULTIPLEX":
             for i in self.floors[current_floor].canvas_objects[direction]:

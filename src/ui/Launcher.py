@@ -61,15 +61,10 @@ class Launcher:
         abs_file_path = os.path.join(script_dir, rel_path)
         self.file_save_name = abs_file_path
 
-        rel_path = "../../config/passengers.csv"
-        abs_file_path = os.path.join(script_dir, rel_path)
-
         with open(self.file_save_name, "r") as file:
             data = json.load(file)
             file.close()
             self.load_data(data)
-
-        Ui.set_value_entry(self.passenger_queue_entry, abs_file_path)
 
         self.run_simulation()
         # remove

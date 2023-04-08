@@ -10,7 +10,7 @@
     "door opening time": "2",
     "door idle time": "3",
     "organize after idle": "",
-    "passenger queue file": "C:\\Users\\Kvakino\\PycharmProjects\\elevators\\src\\ui\\../../config/passengers.csv",
+    "passenger queue file": "C:\\Users\\Kvakino\\PycharmProjects\\elevators\\src\\ui\\../../config/passengers_2023-04-07_02-30-55.csv",
     "heights of floors": [
         "0",
         "4.8",

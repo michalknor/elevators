@@ -61,7 +61,7 @@ class Simulation:
 
     def update_time(self):
         for _ in range(self.current_speed):
-            self.time[-1] += 1
+            self.time[-1] += 10
             if self.time[-1] >= 1000:
                 self.time[-2] += self.time[-1] // 1000
                 self.time[-1] = self.time[-1] % 1000
@@ -83,4 +83,4 @@ class Simulation:
             self.elevator_system.tick(str_time)
 
         self.canvas.itemconfig(self.text_time, text=str_time)
-        self.window.after(1, self.update_time)  # update every 1ms
+        self.window.after(10, self.update_time)  # update every 10ms
