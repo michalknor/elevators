@@ -1,10 +1,5 @@
-import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
-import json
 import random
 
-import src.util.Ui as Util
 import src.engine.ElevatorSystem as ElevatorSystem
 import src.engine.Person as Person
 
@@ -44,33 +39,44 @@ class Floor:
         self.elevator_system.canvas.create_text(5, y-28, text="waiting:", anchor="w")
         self.waiting_text = self.elevator_system.canvas.create_text(50, y-28, text="0", anchor="w")
 
-    def call_mannerly(self, direction: str):
+    def call_mannerly(self, direction: str, final_floor: int):
+        number_of_people = len(self.persons[direction])
+
         for key in self.calls[direction]:
-            if self.calls[direction][key]:
-                return
-        return self.call_closest(direction)
+            if not self.elevator_system.elevators_floor_operation[key][self.floor] or not self.elevator_system.elevators_floor_operation[key][final_floor]:
+                continue
+
+            if (key in self.calls[direction] and self.calls[direction][key]) or (
+                    self.elevator_system.elevators[key].open_doors_if_not_full(self.floor, direction)):
+                number_of_people -= self.elevator_system.elevators[key].capacity
+                if number_of_people <= 0:
+                    return
+
+        return self.call_closest(direction, final_floor)
 
     def call_all(self, direction: str):
-        if self.elevator_is_available_here(direction):
+        if self.elevator_is_available(direction):
             return
 
         for elevator in self.elevator_system.elevators:
-            if self.calls[direction][elevator.index]:
+            if elevator.index not in self.calls[direction] or self.calls[direction][elevator.index]:
                 continue
 
             self.call(direction, elevator.index)
 
-    def call_closest(self, direction: str):
-        if self.elevator_is_available_here(direction):
-            return
-
+    def call_closest(self, direction: str, final_floor: int):
         closest = []
         min_distance = 0
+
         for elevator in self.elevator_system.elevators:
-            if elevator.current_floor_index == self.floor:
-                if elevator.next_floor["direction"] not in (direction, "idle") or elevator.is_full():
-                    continue
-                return
+            if elevator.index not in self.calls[direction] or self.calls[direction][elevator.index]:
+                continue
+
+            if not self.elevator_system.elevators_floor_operation[elevator.index][self.floor] or not self.elevator_system.elevators_floor_operation[elevator.index][final_floor]:
+                continue
+
+            if elevator.is_available(direction, self.floor):
+                continue
 
             distance = abs(elevator.current_floor_index - self.floor)
             if not closest or distance < min_distance:
@@ -79,56 +85,52 @@ class Floor:
             elif distance == min_distance:
                 closest.append(elevator.index)
 
+        if not closest:
+            return
+
         index = closest[random.randrange(len(closest))]
 
         self.call(direction, index)
 
     def call(self, direction: str, i: int):
+        elevator = self.elevator_system.elevators[i]
+
         self.calls[direction][i] = True
         self.elevator_system.canvas.itemconfig(self.canvas_objects[direction][i], fill="green")
+        elevator.calls[direction].add(self.floor)
 
-        self.elevator_system.elevators[i].calls[direction].add(self.floor)
-
-        if self.elevator_system.elevators[i].speed_status == "dec":
-            return
-
-        if self.elevator_system.elevators[i].status != self.elevator_system.elevators[i].direction:
-            return
-
-        if self.elevator_system.elevators[i].status != "idle":
-            distance = self.elevator_system.elevators[i].distance_from_floor(self.floor)
-            distance_to_stop = self.elevator_system.elevators[i].distance_to_stop()
-            if not distance_to_stop > distance > 0:
+        if elevator.speed_status != "idle":
+            distance = elevator.distance_from_floor(self.floor)
+            distance_to_stop = elevator.distance_to_stop()
+            if distance <= distance_to_stop:
                 return
 
-        self.elevator_system.elevators[i].next_floor = self.elevator_system.elevators[i].get_next_floor()
-        self.elevator_system.elevators[i].go_to_next_floor()
+        if elevator.open_doors_if_not_full(self.floor, direction):
+            return
 
-    def elevator_is_available_here(self, direction: str) -> bool:
+        # self.calls[direction][i] = True
+        # self.elevator_system.canvas.itemconfig(self.canvas_objects[direction][i], fill="green")
+        # elevator.calls[direction].add(self.floor)
+
+        if elevator.speed_status == "dec":
+            return
+
+        next_floor = elevator.get_next_floor()
+        # if (elevator.status == "idle" or
+        #         (elevator.direction == "up" and next_floor["index"] < elevator.next_floor["index"]) or
+        #         (elevator.direction == "down" and next_floor["index"] > elevator.next_floor["index"])):
+        #     elevator.next_floor = next_floor
+        #     elevator.go_to_next_floor()
+
+        if elevator.status == "idle":
+            elevator.next_floor = next_floor
+            elevator.go_to_next_floor()
+
+    def elevator_is_available(self, direction: str) -> bool:
         for elevator in self.elevator_system.elevators:
-            if elevator.is_full():
-                continue
+            if elevator.is_available(direction, self.floor):
+                return True
 
-            if elevator.next_floor["direction"] not in (direction, "idle"):
-                continue
-
-            if elevator.current_floor_index == self.floor:
-                match elevator.status:
-                    case "idle":
-                        self.call(direction, elevator.index)
-                        elevator.next_floor["direction"] = direction
-                        elevator.direction = direction
-                        elevator.service_floor()
-                        return True
-                    case "waiting for close":
-                        elevator.set_status("loading")
-                        return True
-                    case "closing doors":
-                        self.call(direction, elevator.index)
-                        elevator.service_floor()
-                        return True
-                    case "loading" | "unloading" | "opening doors":
-                        return True
         return False
 
     def tick(self):
@@ -146,8 +148,13 @@ class Floor:
         self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
             int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) + 1))
 
-    def remove_person(self, direction: str) -> Person:
-        self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
-            int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) - 1))
+    def remove_person(self, direction: str, elevator_index: int) -> Person or None:
 
-        return self.persons[direction].pop(0)
+        for person in self.persons[direction]:
+            if self.elevator_system.elevators_floor_operation[elevator_index][person.current_final_floor]:
+                self.persons[direction].remove(person)
+                self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
+                    int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) - 1))
+                return person
+
+        return None

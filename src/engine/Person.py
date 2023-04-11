@@ -1,8 +1,3 @@
-import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
-import json
-import src.util.Ui as Util
 import src.engine.ElevatorSystem as ElevatorSystem
 
 STATUS = {
@@ -18,28 +13,54 @@ class Person:
         self.elevator_system = elevator_system
 
         self.arrival_time = arrival_time
-        self.current_floor = current_floor
-        self.transfer_floor = final_floor
+        self.starting_floor = current_floor
         self.final_floor = final_floor
+
+        self.current_starting_floor = current_floor
+        self.current_final_floor = final_floor
+        self.direction = None
 
         self.mannerly = mannerly
 
         self.status = "not in system"
 
-        # waiting times are in ms
-        self.time_waiting_for_elevator = 1
-        self.time_in_elevator = 1
+        # waiting times are in 1 ms
+        self.time_waiting_for_elevator = 0
+        self.time_in_elevator = 0
 
-        self.leaving_time = ""
+        self.actualize_path(self.starting_floor)
 
     def tick(self):
         match self.status:
             case "not in system":
                 return
             case "waiting":
-                self.time_waiting_for_elevator += 1
+                self.time_waiting_for_elevator += 10
+                self.elevator_system.call_elevator(self, 1)
+
             case "in elevator":
-                self.time_in_elevator += 1
+                self.time_in_elevator += 10
 
     def set_status(self, status):
         self.status = status
+
+    def actualize_path(self, floor_index: int):
+        self.current_starting_floor = floor_index
+
+        if self.current_starting_floor == self.final_floor:
+            self.set_status("not in system")
+            return
+
+        if self.elevator_system.possible_transport(self.current_starting_floor, self.current_final_floor):
+            self.current_final_floor = self.final_floor
+        else:
+            self.current_final_floor = 0
+
+        self.direction = "down" if self.current_starting_floor > self.current_final_floor else "up"
+
+        if self.status == "not in system":
+            return
+
+        self.status = "waiting"
+
+        self.elevator_system.call_elevator(self, self.mannerly)

@@ -1,9 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
-import json
-import src.util.Ui as Ui
-import src.util.Regex as Regex
+
 import src.engine.ElevatorSystem as ElevatorSystem
 
 
@@ -61,26 +57,30 @@ class Simulation:
 
     def update_time(self):
         for _ in range(self.current_speed):
+            str_time = self.str_time[0]+":"+self.str_time[1]+":"+self.str_time[2]+"."+self.str_time[3]
+
+            if str_time == "17:00:00.000":
+                self.canvas.itemconfig(self.text_time, text=str_time)
+                self.elevator_system.save_simulation_result()
+                return
+
+            self.elevator_system.tick(str_time)
+
             self.time[-1] += 10
-            if self.time[-1] >= 1000:
+            if self.time[-1] == 1000:
                 self.time[-2] += self.time[-1] // 1000
-                self.time[-1] = self.time[-1] % 1000
+                self.time[-1] = 0
                 if self.time[-2] == 60:
                     self.time[-3] += self.time[-2] // 60
-                    self.time[-2] = self.time[-2] % 60
+                    self.time[-2] = 0
                     if self.time[-3] == 60:
                         self.time[-4] += self.time[-3] // 60
-                        self.time[-3] = self.time[-3] % 60
+                        self.time[-3] = 0
                         self.str_time[-4] = "{:02d}".format(self.time[-4])
-                    else:
-                        self.str_time[-3] = "{:02d}".format(self.time[-3])
+                    self.str_time[-3] = "{:02d}".format(self.time[-3])
                 self.str_time[-2] = "{:02d}".format(self.time[-2])
 
             self.str_time[-1] = "{:03d}".format(self.time[-1])
-
-            str_time = self.str_time[0]+":"+self.str_time[1]+":"+self.str_time[2]+"."+self.str_time[3]
-
-            self.elevator_system.tick(str_time)
 
         self.canvas.itemconfig(self.text_time, text=str_time)
         self.window.after(10, self.update_time)  # update every 10ms

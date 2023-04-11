@@ -1,16 +1,14 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
 
 import csv
 
 import random
 
-import src.util.Ui as Util
-
 import src.engine.Elevator as Elevator
 import src.engine.Floor as Floor
 import src.engine.Person as Person
+
+import src.engine.Data as Data
 
 
 class ElevatorSystem:
@@ -25,8 +23,6 @@ class ElevatorSystem:
         self.number_of_floors = int(config["floors"])
         self.call_logic = config["call logic"]
 
-        self.operate_floors_capacity = config["operate floors capacity"]
-
         self.organize_after_idle = config["organize after idle"]
 
         self.heights_of_floors = [float(height) for height in config["heights of floors"]]
@@ -36,8 +32,9 @@ class ElevatorSystem:
 
         self.elevators = [
             Elevator.Elevator(
-                self, i, config["capacity"], config["acceleration"], config["deceleration"], config["maximal speed"],
-                config["door opening time"], config["door idle time"]
+                self, i, int(config["capacity"]), float(config["acceleration"]), float(config["deceleration"]),
+                float(config["maximal speed"]), float(config["door opening time"]), float(config["door idle time"]),
+                int(config["operate floors capacity"])
             ) for i in range(self.number_of_elevators)
         ]
 
@@ -66,13 +63,13 @@ class ElevatorSystem:
         with open(config["passenger queue file"], "r") as file:
             reader = csv.reader(file)
             next(reader)
-            self.passengers = dict()
+            self.persons = dict()
 
             for row in reader:
-                if row[0] not in self.passengers:
-                    self.passengers[row[0]] = []
+                if row[0] not in self.persons:
+                    self.persons[row[0]] = []
 
-                self.passengers[row[0]].append(Person.Person(self, row[0], int(row[1]), int(row[2]), bool(int(row[3]))))
+                self.persons[row[0]].append(Person.Person(self, row[0], int(row[1]), int(row[2]), bool(int(row[3]))))
 
             file.close()
 
@@ -85,28 +82,45 @@ class ElevatorSystem:
             elevator.draw()
 
     def tick(self, current_time):
-        for elevator in self.elevators:
-            elevator.tick()
-
-        if current_time in self.passengers:
-            for person in self.passengers[current_time]:
-                self.call_elevator(person, person.current_floor, person.final_floor, person.mannerly)
+        if current_time in self.persons:
+            for person in self.persons[current_time]:
+                self.call_elevator(person, person.mannerly)
 
         for floor in self.floors:
             floor.tick()
 
-    def call_elevator(self, person: Person, current_floor: int, final_floor: int, mannerly: bool):
-        direction = "down" if final_floor < current_floor else "up"
+        for elevator in self.elevators:
+            elevator.tick()
+
+    def call_elevator(self, person: Person, mannerly):
+        if person not in self.floors[person.current_starting_floor].persons[person.direction]:
+            self.floors[person.current_starting_floor].add_person(person.direction, person)
 
         if self.call_logic == "SIMPLEX":
             if mannerly:
-                self.floors[current_floor].call_mannerly(direction)
+                self.floors[person.current_starting_floor].call_mannerly(person.direction, person.current_final_floor)
             else:
-                self.floors[current_floor].call_all(direction)
+                self.floors[person.current_starting_floor].call_all(person.direction)
 
         elif self.call_logic == "MULTIPLEX":
-            for i in self.floors[current_floor].canvas_objects[direction]:
-                self.canvas.itemconfig(self.floors[current_floor].canvas_objects[direction][i], fill="green")
-                self.floors[current_floor].calls[direction][i] = True
+            for i in self.floors[person.current_starting_floor].canvas_objects[person.direction]:
+                self.canvas.itemconfig(self.floors[person.current_starting_floor].canvas_objects[person.direction][i], fill="green")
+                self.floors[person.current_starting_floor].calls[person.direction][i] = True
 
-        self.floors[current_floor].add_person(direction, person)
+    def possible_transport(self, starting_floor_index: int, final_floor_index: int) -> bool:
+        for elevator_floor_operation in self.elevators_floor_operation:
+            if elevator_floor_operation[starting_floor_index] and elevator_floor_operation[final_floor_index]:
+                return True
+
+        return False
+
+
+    def save_simulation_result(self):
+        persons = []
+        for key in self.persons:
+            for person in self.persons[key]:
+                persons.append(person)
+
+        directory = Data.get_directory()
+        persons_csv = Data.create_data_persons(persons, directory)
+        Data.create_boxplot_persons(persons_csv, directory)

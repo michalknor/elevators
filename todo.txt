@@ -5,11 +5,12 @@ component diagram
 struktura datovej zakladne
 ak su nejake dolezite casti kodu tak sa daju dat -
 
-#program
-ak odide vytah a su nejaky ludia ktory do neho nenastupili tak zavolaj este raz ale iba tie ktore nie su na tomto poschodi alebo su ale nie su plne
-multiplex - zavolat najblizsi a odstranit volania na toto poschodie az nejaky dorazi
-sectory - vytahy chodia iba tam kam maju, ludia si volaju iba tie ktorymi sa tam dostanu,
-pri mannerly volat tolko vytahov kolko je cakajucich ludi / kapacita
+multiplex:
+    - zavolat najblizsi v smere ako paternoster a odstranit volania na toto poschodie az nejaky dorazi
+      pretoze ak je nejaky plny a neobsluhuje poschodia, tak na poschodie zavolame dalsi najblizsi
+    - ak su 2 take tak zavolaj random
+
+sectory - ludia si volaju iba tie vytahy ktorymi sa tam dostanu
 
 # done
 postavit sa pred vytahy, pocas prestavok aj mimo na kazdom poschodi - dni, hodiny

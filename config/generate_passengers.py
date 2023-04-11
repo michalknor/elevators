@@ -4,7 +4,7 @@ import random
 
 floors = {i for i in range(int(input("number of floors: ")))}
 mannerly = [int(num) for num in input("Mannerly (0, 1): ").split(",")]
-iterations = int(input("Number of passengers: "))
+iterations = int(input("Number of persons: "))
 
 floors_tuple = tuple(floors)
 floors_final = {it: tuple(floors - {it}) for it in floors}
@@ -31,11 +31,11 @@ passengers = dict(sorted(passengers.items()))
 now = datetime.now()
 timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-filename = f"passengers_{timestamp}.csv"
+filename = f"../passengers_{timestamp}.csv"
 
 with open(filename, mode="w", newline="") as file:
     writer = csv.writer(file)
-    writer.writerow(["arrival time", "current_floor", "final_floor", "mannerly"])
+    writer.writerow(["arrival_time", "starting_floor", "final_floor", "mannerly"])
 
     for key in passengers:
         for passenger in passengers[key]:

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import json
+
 import src.util.Ui as Ui
 import src.util.Regex as Regex
 import src.ui.Simulation as Simulation
@@ -57,7 +58,7 @@ class Launcher:
         # remove
         import os
         script_dir = os.path.dirname(__file__)
-        rel_path = "../../config/current.json"
+        rel_path = "../../config/strategy1.json"
         abs_file_path = os.path.join(script_dir, rel_path)
         self.file_save_name = abs_file_path
 
@@ -328,6 +329,8 @@ class Launcher:
         config["call logic"] = self.elevator_call_logic_combobox.get()
         config["capacity"] = self.elevator_capacity_entry.get()
         config["operate floors capacity"] = self.operate_floors_entry.get()
+        if config["operate floors capacity"] == "":
+            config["operate floors capacity"] = 0
         config["acceleration"] = self.acceleration_of_elevators_entry.get()
         config["deceleration"] = self.deceleration_of_elevators_entry.get()
         config["maximal speed"] = self.max_speed_of_elevators_entry.get()
@@ -368,6 +371,8 @@ class Launcher:
         Ui.set_value_entry(self.door_idle_time_entry, data["door idle time"])
         Ui.set_value_entry(self.organize_elevators_entry, data["organize after idle"])
         Ui.set_value_entry(self.passenger_queue_entry, data["passenger queue file"])
+
+        print(data["passenger queue file"])
 
         self.heights_of_floors = [tk.StringVar(value=value) for value in data["heights of floors"]]
 
@@ -418,9 +423,11 @@ class Launcher:
         self.save_to_file()
 
     def on_open(self):
-        path = tk.filedialog.askopenfilename(filetypes=(("JSON", "*.json"),))
-        if path == "":
+        file = tk.filedialog.askopenfilename(filetypes=(("JSON", "*.json"),))
+        if file == "":
             return
+
+        self.file_save_name = file
 
         with open(self.file_save_name, "r") as file:
             data = json.load(file)

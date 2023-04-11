@@ -1,8 +1,3 @@
-import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
-import json
-import src.util.Ui as Util
 import src.engine.ElevatorSystem as ElevatorSystem
 
 HEIGHT = 2
@@ -15,7 +10,7 @@ DIRECTION = {"up": -1,
 SPEED_STATUS = {"acc": "accelerating",
                 "dec": "decelerating",
                 "max": "maximal speed",
-                "not": "not moving"}
+                "idle": "not moving"}
 
 STATUS = {"idle": "idle",
           "up": "going up",
@@ -33,7 +28,7 @@ NEXT_PERSON_COUNTDOWN = int(1 / 0.01)
 class Elevator:
     def __init__(self, elevator_system: ElevatorSystem,
                  index: int, capacity: int, acceleration: int, deceleration: int, maximal_speed: int,
-                 door_opening_time: float, door_idle_time: float):
+                 door_opening_time: float, door_idle_time: float, operate_floors_capacity: int):
         self.elevator_system = elevator_system
         self.index = index
 
@@ -41,17 +36,19 @@ class Elevator:
 
         self.elevator_current_height = self.elevator_system.heights_of_floors[self.current_floor_index]
 
-        self.capacity = int(capacity)
-        self.acceleration = float(acceleration)
-        self.deceleration = float(deceleration)
-        self.maximal_speed = float(maximal_speed)
-        self.door_opening_time = float(door_opening_time)
-        self.door_idle_time = float(door_idle_time)
+        self.capacity = capacity
+        self.acceleration = acceleration
+        self.deceleration = deceleration
+        self.maximal_speed = maximal_speed
+        self.door_opening_time = door_opening_time
+        self.door_idle_time = door_idle_time
+
+        self.operate_floors_capacity = operate_floors_capacity
 
         self.door_idle_time_current = 0.0
 
         self.speed = 0
-        self.speed_status = "not"
+        self.speed_status = "idle"
         self.opened_doors = 0
 
         self.next_person_countdown = NEXT_PERSON_COUNTDOWN
@@ -60,13 +57,19 @@ class Elevator:
 
         self.max_floor = self.elevator_system.number_of_floors - 1
 
-        self.direction = "idle"
+        if self.current_floor_index == 0:
+            self.direction = "up"
+        elif self.current_floor_index == self.max_floor:
+            self.direction = "down"
+        else:
+            self.direction = "idle"
+
         self.status = "idle"
 
         self.destinations = {i: [] for i in range(self.elevator_system.number_of_floors)}
         self.calls = {"up": set(), "down": set()}
 
-        self.next_floor = {"index": self.current_floor_index, "direction": "idle"}
+        self.next_floor = {"index": self.current_floor_index, "direction": self.direction}
 
         self.canvas_elevator_rectangle = None
         self.canvas_elevator_status_text = None
@@ -116,7 +119,7 @@ class Elevator:
                     return
                 self.unload_next_person()
             case "loading":
-                if self.direction == "idle" or len(self.elevator_system.floors[self.current_floor_index].persons[self.direction]) == 0:
+                if self.direction == "idle":
                     self.set_status("waiting for close")
                     return
                 self.load_next_person()
@@ -136,8 +139,14 @@ class Elevator:
                     self.go_to_next_floor()
                     return
 
-                if not self.has_calls():
-                    self.set_status("idle")
+                if self.next_floor["direction"] != "idle":
+                    self.service_floor()
+                    return
+
+                self.set_status("idle")
+
+                # if not self.has_calls():
+                #     self.set_status("idle")
 
     def move(self):
         match self.speed_status:
@@ -154,40 +163,52 @@ class Elevator:
                 y_offset = self.speed * 0.01 - 0.5 * self.deceleration * 0.01 ** 2
                 self.speed = max(0.0, self.speed - self.deceleration * 0.01)
                 if self.speed <= 0.0:
-                    self.speed_status = "not"
-            case "not":
+                    self.speed_status = "idle"
+            case "idle":
                 self.redraw_to_actual_height_position()
-                self.current_floor_index = self.next_floor["index"]
+                self.current_floor_index = self.current_floor_index = min(range(len(self.elevator_system.heights_of_floors)), key=lambda i: abs(self.elevator_system.heights_of_floors[i] - self.elevator_current_height))
                 self.elevator_current_height = self.elevator_system.heights_of_floors[self.current_floor_index]
 
                 if self.current_floor_index == self.max_floor:
                     self.direction = "down"
-                if self.current_floor_index == 0:
+                    self.next_floor["direction"] = self.direction
+                elif self.current_floor_index == 0:
                     self.direction = "up"
-
-                if not self.exist_calls_this_direction():
+                    self.next_floor["direction"] = self.direction
+                elif not self.exist_calls_this_direction():
                     self.direction = "up" if self.direction == "down" else "down"
+                    self.next_floor["direction"] = self.direction
                     if not self.exist_calls_this_direction():
                         self.direction = "idle"
+                        self.next_floor["direction"] = self.direction
 
                 self.service_floor()
                 return
 
         self.elevator_current_height -= DIRECTION[self.direction] * y_offset
         self.redraw_actual_position(DIRECTION[self.direction] * y_offset * 25)
+        self.current_floor_index = min(range(len(self.elevator_system.heights_of_floors)), key=lambda i: abs(self.elevator_system.heights_of_floors[i] - self.elevator_current_height))
 
     def service_floor(self):
         self.set_status("opening doors")
+
         if self.direction == "idle":
-            return
-        if self.index in self.elevator_system.floors[self.current_floor_index].calls[self.direction]:
-            self.elevator_system.floors[self.current_floor_index].calls[self.direction][self.index] = False
+            if self.elevator_system.floors[self.current_floor_index].calls["up"]:
+                self.next_floor["direction"] = "up"
+                self.direction = "up"
+
+            if self.elevator_system.floors[self.current_floor_index].calls["down"]:
+                self.next_floor["direction"] = "down"
+                self.direction = "down"
+
+        if self.index in self.elevator_system.floors[self.current_floor_index].calls[self.next_floor["direction"]]:
+            self.elevator_system.floors[self.current_floor_index].calls[self.next_floor["direction"]][self.index] = False
             self.elevator_system.canvas.itemconfig(
-                self.elevator_system.floors[self.current_floor_index].canvas_objects[self.direction][self.index],
+                self.elevator_system.floors[self.current_floor_index].canvas_objects[self.next_floor["direction"]][self.index],
                 fill="gray")
 
-        if self.current_floor_index in self.calls[self.direction]:
-            self.calls[self.direction].remove(self.current_floor_index)
+        if self.current_floor_index in self.calls[self.next_floor["direction"]]:
+            self.calls[self.next_floor["direction"]].remove(self.current_floor_index)
 
     def decelerate_if_necessary(self):
         distance = abs(self.elevator_system.heights_of_floors[self.next_floor["index"]] - self.elevator_current_height)
@@ -217,30 +238,33 @@ class Elevator:
         self.elevator_system.canvas.coords(self.canvas_number_of_passengers_text, x1, y + HEIGHT * 25 / 2)
 
     def get_next_floor(self) -> dict:
-        call = self.get_next_call()
         destination = self.get_next_destination()
 
+        if not self.service_calls():
+            return destination
+
+        call = self.get_next_call()
+
         if destination["direction"] == "idle":
+            return call
+
+        if destination["index"] == self.current_floor_index:
             return call
 
         if call == self.next_floor or call["direction"] != self.direction:
             return destination
 
-        if destination["index"] == self.current_floor_index:
-            return call
-
         if self.direction == "up":
-            if call["index"] < destination["index"]:
+            if self.current_floor_index < call["index"] < destination["index"]:
                 return call
             return destination
 
-        if call["index"] > destination["index"]:
+        if self.current_floor_index > call["index"] > destination["index"]:
             return call
         return destination
 
     def get_next_call(self) -> dict:
-        self_next_floor_idle = self.next_floor
-        self_next_floor_idle["direction"] = "idle"
+        self_next_floor_idle = {"index": self.next_floor["index"], "direction": "idle"}
         if not self.calls["up"] and not self.calls["down"]:
             return self_next_floor_idle
 
@@ -262,7 +286,7 @@ class Elevator:
             if next_floors:
                 return {"index": min(next_floors), "direction": "up"}
 
-        if self.direction == "idle":
+        if self.next_floor["direction"] == "idle":
             next_floor = min([
                 [
                     abs(self.current_floor_index - floor), floor, direction
@@ -291,9 +315,11 @@ class Elevator:
     def go_to_next_floor(self):
         if self.next_floor["index"] == self.current_floor_index:
             if self.status == "idle":
-                self.direction = self.next_floor["direction"]
                 self.service_floor()
                 return
+            return
+
+        if self.speed_status != "idle":
             return
 
         if self.next_floor["index"] > self.current_floor_index:
@@ -314,30 +340,37 @@ class Elevator:
         self.next_person_countdown = NEXT_PERSON_COUNTDOWN
 
         person = self.destinations[self.current_floor_index].pop()
-        person.set_status("not in system")
-        self.elevator_system.canvas.itemconfig(self.canvas_number_of_passengers_text, text=self.direction + str({key: len(self.destinations[key]) for key in self.destinations if len(self.destinations[key]) > 0}))#str(self.current_load))
+        person.actualize_path(self.current_floor_index)
+
+        self.elevator_system.canvas.itemconfig(self.canvas_number_of_passengers_text, text=self.next_floor["direction"] + str({key: len(self.destinations[key]) for key in self.destinations if len(self.destinations[key]) > 0}))#str(self.current_load))
 
     def load_next_person(self):
+        if (self.capacity == self.current_load
+                or len(self.elevator_system.floors[self.current_floor_index].persons[self.next_floor["direction"]]) == 0):
+            self.set_status("waiting for close")
+            self.door_idle_time_current = 0.0
+            return
+
         if self.next_person_countdown > 0:
             self.next_person_countdown -= 1
             return
 
-        if self.capacity == self.current_load:
+        person = self.elevator_system.floors[self.current_floor_index].remove_person(self.next_floor["direction"],
+                                                                                     self.index)
+
+        if person is None:
             self.set_status("waiting for close")
+            self.door_idle_time_current = 0.0
             return
 
         self.current_load += 1
 
-        self.door_idle_time_current = 0.0
-
         self.next_person_countdown = NEXT_PERSON_COUNTDOWN
 
-        person = self.elevator_system.floors[self.current_floor_index].remove_person(self.direction)
-
-        self.destinations[person.final_floor].append(person)
+        self.destinations[person.current_final_floor].append(person)
         person.set_status("in elevator")
 
-        self.elevator_system.canvas.itemconfig(self.canvas_number_of_passengers_text, text=self.direction + str({key: len(self.destinations[key]) for key in self.destinations if len(self.destinations[key]) > 0}))#str(self.current_load))
+        self.elevator_system.canvas.itemconfig(self.canvas_number_of_passengers_text, text=self.next_floor["direction"] + str({key: len(self.destinations[key]) for key in self.destinations if len(self.destinations[key]) > 0}))#str(self.current_load))
 
     def wait_for_close(self):
         self.door_idle_time_current += 0.01
@@ -353,15 +386,21 @@ class Elevator:
             case "down" | "up":
                 self.direction = status
                 self.speed_status = "acc"
+            case "idle":
+                self.direction = "idle"
+                self.next_floor["direction"] = "idle"
 
         self.status = status
         self.elevator_system.canvas.itemconfigure(self.canvas_elevator_status_text, text=STATUS[self.status])
 
     def distance_from_floor(self, floor) -> float:
-        return (self.elevator_system.heights_of_floors[floor] - self.elevator_current_height) * -DIRECTION[self.direction]
+        a = self.elevator_system.heights_of_floors[floor]
+        b = self.elevator_current_height
+        c = -DIRECTION[self.direction]
+        return (self.elevator_current_height - self.elevator_system.heights_of_floors[floor]) * DIRECTION[self.direction]
 
     def distance_to_stop(self):
-        return self.speed ** 2 / 2 * self.deceleration * DIRECTION[self.direction]
+        return self.speed ** 2 / 2 * self.deceleration
 
     def exist_calls_this_direction(self):
         if self.direction == "up":
@@ -387,3 +426,61 @@ class Elevator:
                     return True
 
         return False
+
+    def is_available(self, direction: str, floor: int) -> bool:
+        if self.current_floor_index != floor or self.speed_status != "idle":
+            return False
+
+        if self.next_floor["direction"] not in (direction, "idle"):
+            return False
+
+        if self.is_full():
+            if self.status in ("unloading", "opening doors"):
+                return True
+            return False
+
+        match self.status:
+            case "idle":
+                self.next_floor["direction"] = direction
+                self.direction = direction
+                self.service_floor()
+                return True
+            case "waiting for close":
+                self.set_status("loading")
+                return True
+            case "closing doors":
+                self.service_floor()
+                return True
+            case "loading" | "unloading" | "opening doors":
+                return True
+
+        return True
+
+    def is_on_floor(self, direction: str, floor: int):
+        if self.current_floor_index == floor and self.speed_status == "idle" and self.next_floor["direction"] in (direction, "idle"):
+            return True
+
+        return False
+
+    def open_doors_if_not_full(self, floor: int, direction: str) -> bool:
+        if (self.speed_status != "idle"
+                or self.is_full()
+                or self.current_floor_index != floor
+                or self.next_floor["direction"] != direction):
+            return False
+
+        match self.status:
+            case "idle":
+                self.service_floor()
+                return True
+            case "waiting for close":
+                self.set_status("loading")
+                return True
+            case "closing doors":
+                self.service_floor()
+                return True
+            case "loading" | "unloading" | "opening doors":
+                return True
+
+    def service_calls(self) -> bool:
+        return self.operate_floors_capacity <= self.capacity - self.current_load
