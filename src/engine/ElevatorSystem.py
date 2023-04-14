@@ -8,8 +8,6 @@ import src.engine.Elevator as Elevator
 import src.engine.Floor as Floor
 import src.engine.Person as Person
 
-import src.engine.Data as Data
-
 
 class ElevatorSystem:
     def __init__(self, canvas: tk.Canvas, config: dict):
@@ -103,9 +101,16 @@ class ElevatorSystem:
                 self.floors[person.current_starting_floor].call_all(person.direction)
 
         elif self.call_logic == "MULTIPLEX":
-            for i in self.floors[person.current_starting_floor].canvas_objects[person.direction]:
-                self.canvas.itemconfig(self.floors[person.current_starting_floor].canvas_objects[person.direction][i], fill="green")
-                self.floors[person.current_starting_floor].calls[person.direction][i] = True
+            elevator = self.floors[person.current_starting_floor].elevator_is_here(person.direction)
+            if elevator:
+                elevator.open_doors_if_not_full(person.current_starting_floor, person.direction)
+                return
+
+            self.call_closest(person.direction, self.floors[person.current_starting_floor])
+
+            for index in self.floors[person.current_starting_floor].canvas_objects[person.direction]:
+                self.canvas.itemconfig(self.floors[person.current_starting_floor].canvas_objects[person.direction][index], fill="green")
+                self.floors[person.current_starting_floor].calls[person.direction][index] = True
 
     def possible_transport(self, starting_floor_index: int, final_floor_index: int) -> bool:
         for elevator_floor_operation in self.elevators_floor_operation:
@@ -114,13 +119,63 @@ class ElevatorSystem:
 
         return False
 
+    def call_closest(self, direction: str, floor: Floor):
+        closest = []
+        min_distance = 0
 
-    def save_simulation_result(self):
-        persons = []
-        for key in self.persons:
-            for person in self.persons[key]:
-                persons.append(person)
+        for elevator in self.elevators:
+            if floor.floor == elevator.next_floor["index"] and direction == elevator.next_floor["direction"]:
+                return
 
-        directory = Data.get_directory()
-        persons_csv = Data.create_data_persons(persons, directory)
-        Data.create_boxplot_persons(persons_csv, directory)
+            if elevator.current_floor_index == floor.floor and elevator.next_floor["direction"] == direction:
+                return
+
+            if elevator.index not in floor.calls[direction]:
+                continue
+
+            if floor.floor in elevator.calls[direction]:
+                elevator.calls[direction].remove(floor.floor)
+
+            distance = abs(elevator.current_floor_index - floor.floor)
+            if elevator.next_floor["direction"] not in ("idle", direction):
+                if direction == "up":
+                    distance += 2 * elevator.current_floor_index
+                elif direction == "down":
+                    distance += 2 * (elevator.max_floor - elevator.current_floor_index)
+            if not closest or distance < min_distance:
+                closest = [elevator.index]
+                min_distance = distance
+            elif distance == min_distance:
+                closest.append(elevator.index)
+
+        if not closest:
+            return
+
+        index = closest[random.randrange(len(closest))]
+
+        self.call(direction, floor, self.elevators[index])
+
+    def call(self, direction: str, floor: Floor, elevator: Elevator):
+        index = elevator.index
+
+        floor.calls[direction][index] = True
+        self.canvas.itemconfig(floor.canvas_objects[direction][index], fill="green")
+        elevator.calls[direction].add(floor.floor)
+
+        if elevator.speed_status != "idle":
+            distance = elevator.distance_from_floor(floor.floor)
+            distance_to_stop = elevator.distance_to_stop()
+            if distance <= distance_to_stop:
+                return
+
+        if elevator.open_doors_if_not_full(floor.floor, direction):
+            return
+
+        if elevator.speed_status == "dec":
+            return
+
+        next_floor = elevator.get_next_floor()
+
+        if elevator.status == "idle":
+            elevator.next_floor = next_floor
+            elevator.go_to_next_floor()

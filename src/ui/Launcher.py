@@ -58,7 +58,7 @@ class Launcher:
         # remove
         import os
         script_dir = os.path.dirname(__file__)
-        rel_path = "../../config/strategy1.json"
+        rel_path = "../../config/strategy4.json"
         abs_file_path = os.path.join(script_dir, rel_path)
         self.file_save_name = abs_file_path
 

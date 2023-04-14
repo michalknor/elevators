@@ -2,6 +2,8 @@ import tkinter as tk
 
 import src.engine.ElevatorSystem as ElevatorSystem
 
+import src.util.Data as Data
+
 
 class Simulation:
     def __init__(self, window, config):
@@ -55,13 +57,25 @@ class Simulation:
         self.current_speed = self.speeds[int(value)]
         self.speed_scale.config(label="speed: " + str(self.current_speed))
 
+    def save_simulation_result(self):
+        persons = []
+        for key in self.elevator_system.persons:
+            for person in self.elevator_system.persons[key]:
+                persons.append(person)
+
+        directory = Data.get_directory()
+
+        persons_csv = Data.create_data_persons(persons, directory)
+
+        Data.create_boxplot_persons(persons_csv, directory)
+
     def update_time(self):
         for _ in range(self.current_speed):
             str_time = self.str_time[0]+":"+self.str_time[1]+":"+self.str_time[2]+"."+self.str_time[3]
 
             if str_time == "17:00:00.000":
                 self.canvas.itemconfig(self.text_time, text=str_time)
-                self.elevator_system.save_simulation_result()
+                self.save_simulation_result()
                 return
 
             self.elevator_system.tick(str_time)

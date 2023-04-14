@@ -1,6 +1,7 @@
 import random
 
 import src.engine.ElevatorSystem as ElevatorSystem
+import src.engine.Elevator as Elevator
 import src.engine.Person as Person
 
 
@@ -78,6 +79,9 @@ class Floor:
             if elevator.is_available(direction, self.floor):
                 continue
 
+            if elevator.current_floor_index == self.floor and elevator.is_full() and elevator.next_floor["direction"] == direction:
+                continue
+
             distance = abs(elevator.current_floor_index - self.floor)
             if not closest or distance < min_distance:
                 closest = [elevator.index]
@@ -90,41 +94,7 @@ class Floor:
 
         index = closest[random.randrange(len(closest))]
 
-        self.call(direction, index)
-
-    def call(self, direction: str, i: int):
-        elevator = self.elevator_system.elevators[i]
-
-        self.calls[direction][i] = True
-        self.elevator_system.canvas.itemconfig(self.canvas_objects[direction][i], fill="green")
-        elevator.calls[direction].add(self.floor)
-
-        if elevator.speed_status != "idle":
-            distance = elevator.distance_from_floor(self.floor)
-            distance_to_stop = elevator.distance_to_stop()
-            if distance <= distance_to_stop:
-                return
-
-        if elevator.open_doors_if_not_full(self.floor, direction):
-            return
-
-        # self.calls[direction][i] = True
-        # self.elevator_system.canvas.itemconfig(self.canvas_objects[direction][i], fill="green")
-        # elevator.calls[direction].add(self.floor)
-
-        if elevator.speed_status == "dec":
-            return
-
-        next_floor = elevator.get_next_floor()
-        # if (elevator.status == "idle" or
-        #         (elevator.direction == "up" and next_floor["index"] < elevator.next_floor["index"]) or
-        #         (elevator.direction == "down" and next_floor["index"] > elevator.next_floor["index"])):
-        #     elevator.next_floor = next_floor
-        #     elevator.go_to_next_floor()
-
-        if elevator.status == "idle":
-            elevator.next_floor = next_floor
-            elevator.go_to_next_floor()
+        self.elevator_system.call(direction, self, self.elevator_system.elevators[index])
 
     def elevator_is_available(self, direction: str) -> bool:
         for elevator in self.elevator_system.elevators:
@@ -156,5 +126,14 @@ class Floor:
                 self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
                     int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) - 1))
                 return person
+
+        return None
+
+    def elevator_is_here(self, direction: str) -> Elevator or None:
+        for elevator in self.elevator_system.elevators:
+            if elevator.next_floor["direction"] not in (direction, "idle"):
+                continue
+            if elevator.current_floor_index == self.floor and elevator.speed_status == "idle":
+                return elevator
 
         return None
