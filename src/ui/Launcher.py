@@ -55,20 +55,20 @@ class Launcher:
         self.window.resizable(False, False)
         self.window.eval('tk::PlaceWindow . center')
 
-        # remove
-        import os
-        script_dir = os.path.dirname(__file__)
-        rel_path = "../../config/strategy4.json"
-        abs_file_path = os.path.join(script_dir, rel_path)
-        self.file_save_name = abs_file_path
-
-        with open(self.file_save_name, "r") as file:
-            data = json.load(file)
-            file.close()
-            self.load_data(data)
-
-        self.run_simulation()
-        # remove
+        # # remove
+        # import os
+        # script_dir = os.path.dirname(__file__)
+        # rel_path = "../../config/strategy4.json"
+        # abs_file_path = os.path.join(script_dir, rel_path)
+        # self.file_save_name = abs_file_path
+        #
+        # with open(self.file_save_name, "r") as file:
+        #     data = json.load(file)
+        #     file.close()
+        #     self.load_data(data)
+        #
+        # self.run_simulation()
+        # # remove
 
         self.window.mainloop()
 

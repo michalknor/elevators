@@ -82,35 +82,13 @@ class ElevatorSystem:
     def tick(self, current_time):
         if current_time in self.persons:
             for person in self.persons[current_time]:
-                self.call_elevator(person, person.mannerly)
+                person.call_elevator()
 
         for floor in self.floors:
             floor.tick()
 
         for elevator in self.elevators:
             elevator.tick()
-
-    def call_elevator(self, person: Person, mannerly):
-        if person not in self.floors[person.current_starting_floor].persons[person.direction]:
-            self.floors[person.current_starting_floor].add_person(person.direction, person)
-
-        if self.call_logic == "SIMPLEX":
-            if mannerly:
-                self.floors[person.current_starting_floor].call_mannerly(person.direction, person.current_final_floor)
-            else:
-                self.floors[person.current_starting_floor].call_all(person.direction)
-
-        elif self.call_logic == "MULTIPLEX":
-            elevator = self.floors[person.current_starting_floor].elevator_is_here(person.direction)
-            if elevator:
-                elevator.open_doors_if_not_full(person.current_starting_floor, person.direction)
-                return
-
-            self.call_closest(person.direction, self.floors[person.current_starting_floor])
-
-            for index in self.floors[person.current_starting_floor].canvas_objects[person.direction]:
-                self.canvas.itemconfig(self.floors[person.current_starting_floor].canvas_objects[person.direction][index], fill="green")
-                self.floors[person.current_starting_floor].calls[person.direction][index] = True
 
     def possible_transport(self, starting_floor_index: int, final_floor_index: int) -> bool:
         for elevator_floor_operation in self.elevators_floor_operation:

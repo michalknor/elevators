@@ -1,3 +1,4 @@
+import random
 import src.engine.ElevatorSystem as ElevatorSystem
 
 STATUS = {
@@ -36,13 +37,36 @@ class Person:
                 return
             case "waiting":
                 self.time_waiting_for_elevator += 10
-                self.elevator_system.call_elevator(self, 1)
+                self.call_elevator()
 
             case "in elevator":
                 self.time_in_elevator += 10
 
     def set_status(self, status):
         self.status = status
+
+    def call_elevator(self):
+        floor = self.elevator_system.floors[self.current_starting_floor]
+        if self not in floor.persons[self.direction]:
+            floor.add_person(self.direction, self)
+
+        if self.elevator_system.call_logic == "SIMPLEX":
+            if self.mannerly:
+                self.call_mannerly()
+            else:
+                self.call_all()
+
+        elif self.elevator_system.call_logic == "MULTIPLEX":
+            elevator = floor.elevator_is_here(self.direction)
+            if elevator:
+                elevator.open_doors_if_not_full(self.current_starting_floor, self.direction)
+                return
+
+            self.call_closest()
+
+            for index in floor.canvas_objects[self.direction]:
+                self.elevator_system.canvas.itemconfig(floor.canvas_objects[self.direction][index], fill="green")
+                self.elevator_system.floors[self.current_starting_floor].calls[self.direction][index] = True
 
     def actualize_path(self, floor_index: int):
         self.current_starting_floor = floor_index
@@ -64,3 +88,62 @@ class Person:
         self.status = "waiting"
 
         self.elevator_system.call_elevator(self, self.mannerly)
+
+    def call_mannerly(self):
+        floor = self.elevator_system.floors[self.current_starting_floor]
+        number_of_people = len(floor.persons[self.direction])
+
+        for key in floor.calls[self.direction]:
+            if not self.elevator_system.elevators_floor_operation[key][floor.floor] or not self.elevator_system.elevators_floor_operation[key][self.current_final_floor]:
+                continue
+
+            if (key in floor.calls[self.direction] and floor.calls[self.direction][key]) or (
+                    self.elevator_system.elevators[key].open_doors_if_not_full(floor.floor, self.direction)):
+                number_of_people -= self.elevator_system.elevators[key].capacity
+                if number_of_people <= 0:
+                    return
+
+        return self.call_closest()
+
+    def call_all(self):
+        floor = self.elevator_system.floors[self.current_starting_floor]
+        if floor.elevator_is_available(self.direction):
+            return
+
+        for elevator in floor.elevator_system.elevators:
+            if elevator.index not in floor.calls[self.direction] or floor.calls[self.direction][elevator.index]:
+                continue
+
+            self.elevator_system.call(self.direction, floor, elevator)
+
+    def call_closest(self):
+        floor = self.elevator_system.floors[self.current_starting_floor]
+        closest = []
+        min_distance = 0
+
+        for elevator in self.elevator_system.elevators:
+            if elevator.index not in floor.calls[self.direction] or floor.calls[self.direction][elevator.index]:
+                continue
+
+            if not self.elevator_system.elevators_floor_operation[elevator.index][floor.floor] or not self.elevator_system.elevators_floor_operation[elevator.index][self.current_final_floor]:
+                continue
+
+            if elevator.is_available(self.direction, floor.floor):
+                continue
+
+            if elevator.current_floor_index == floor.floor and elevator.is_full() and elevator.next_floor["direction"] == self.direction:
+                continue
+
+            distance = abs(elevator.current_floor_index - floor.floor)
+            if not closest or distance < min_distance:
+                closest = [elevator.index]
+                min_distance = distance
+            elif distance == min_distance:
+                closest.append(elevator.index)
+
+        if not closest:
+            return
+
+        index = closest[random.randrange(len(closest))]
+
+        self.elevator_system.call(self.direction, floor, self.elevator_system.elevators[index])
