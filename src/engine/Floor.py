@@ -12,7 +12,7 @@ class Floor:
         self.possible_down = {i: True for i in range(self.elevator_system.number_of_elevators)}
 
         self.persons = {"up": [], "down": []}
-        self.waiting_text = None
+        self.waiting_text_id = None
 
         self.canvas_objects = {"up": dict(), "down": dict()}
         self.calls = {"up": dict(), "down": dict()}
@@ -36,7 +36,12 @@ class Floor:
 
         self.elevator_system.canvas.create_text(10, y-40, text="floor: " + str(self.floor), anchor="w")
         self.elevator_system.canvas.create_text(5, y-28, text="waiting:", anchor="w")
-        self.waiting_text = self.elevator_system.canvas.create_text(50, y-28, text="0", anchor="w")
+        self.waiting_text_id = self.elevator_system.canvas.create_text(50, y-28, text="0", anchor="w")
+
+    def tick(self):
+        for direction in self.persons:
+            for person in self.persons[direction]:
+                person.tick()
 
     def elevator_is_available(self, direction: str) -> bool:
         for elevator in self.elevator_system.elevators:
@@ -45,11 +50,6 @@ class Floor:
 
         return False
 
-    def tick(self):
-        for direction in self.persons:
-            for person in self.persons[direction]:
-                person.tick()
-
     def add_person(self, direction: str, person):
         if person in self.persons[direction]:
             return
@@ -57,15 +57,15 @@ class Floor:
         person.set_status("waiting")
 
         self.persons[direction].append(person)
-        self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
-            int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) + 1))
+        self.elevator_system.canvas.itemconfig(self.waiting_text_id, text=str(
+            int(self.elevator_system.canvas.itemcget(self.waiting_text_id, "text")) + 1))
 
     def remove_person(self, direction: str, elevator_index: int) -> Person or None:
         for person in self.persons[direction]:
             if self.elevator_system.elevators_floor_operation[elevator_index][person.current_final_floor]:
                 self.persons[direction].remove(person)
-                self.elevator_system.canvas.itemconfig(self.waiting_text, text=str(
-                    int(self.elevator_system.canvas.itemcget(self.waiting_text, "text")) - 1))
+                self.elevator_system.canvas.itemconfig(self.waiting_text_id, text=str(
+                    int(self.elevator_system.canvas.itemcget(self.waiting_text_id, "text")) - 1))
                 return person
 
         return None

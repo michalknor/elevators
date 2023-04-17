@@ -45,6 +45,27 @@ class Person:
     def set_status(self, status):
         self.status = status
 
+    def actualize_path(self, floor_index: int):
+        self.current_starting_floor = floor_index
+
+        if self.current_starting_floor == self.final_floor:
+            self.set_status("not in system")
+            return
+
+        if self.elevator_system.possible_transport(self.current_starting_floor, self.current_final_floor):
+            self.current_final_floor = self.final_floor
+        else:
+            self.current_final_floor = 0
+
+        self.direction = "down" if self.current_starting_floor > self.current_final_floor else "up"
+
+        if self.status == "not in system":
+            return
+
+        self.status = "waiting"
+
+        self.call_elevator()
+
     def call_elevator(self):
         floor = self.elevator_system.floors[self.current_starting_floor]
         if self not in floor.persons[self.direction]:
@@ -68,27 +89,6 @@ class Person:
                 self.elevator_system.canvas.itemconfig(floor.canvas_objects[self.direction][index], fill="green")
                 self.elevator_system.floors[self.current_starting_floor].calls[self.direction][index] = True
 
-    def actualize_path(self, floor_index: int):
-        self.current_starting_floor = floor_index
-
-        if self.current_starting_floor == self.final_floor:
-            self.set_status("not in system")
-            return
-
-        if self.elevator_system.possible_transport(self.current_starting_floor, self.current_final_floor):
-            self.current_final_floor = self.final_floor
-        else:
-            self.current_final_floor = 0
-
-        self.direction = "down" if self.current_starting_floor > self.current_final_floor else "up"
-
-        if self.status == "not in system":
-            return
-
-        self.status = "waiting"
-
-        self.elevator_system.call_elevator(self, self.mannerly)
-
     def call_mannerly(self):
         floor = self.elevator_system.floors[self.current_starting_floor]
         number_of_people = len(floor.persons[self.direction])
@@ -99,11 +99,11 @@ class Person:
 
             if (key in floor.calls[self.direction] and floor.calls[self.direction][key]) or (
                     self.elevator_system.elevators[key].open_doors_if_not_full(floor.floor, self.direction)):
-                number_of_people -= self.elevator_system.elevators[key].capacity
+                number_of_people -= self.elevator_system.elevators[key].parameters.capacity
                 if number_of_people <= 0:
                     return
 
-        return self.call_closest()
+        self.call_closest()
 
     def call_all(self):
         floor = self.elevator_system.floors[self.current_starting_floor]
@@ -111,7 +111,7 @@ class Person:
             return
 
         for elevator in floor.elevator_system.elevators:
-            if elevator.index not in floor.calls[self.direction] or floor.calls[self.direction][elevator.index]:
+            if elevator.parameters.index not in floor.calls[self.direction] or floor.calls[self.direction][elevator.parameters.index]:
                 continue
 
             self.elevator_system.call(self.direction, floor, elevator)
@@ -122,10 +122,10 @@ class Person:
         min_distance = 0
 
         for elevator in self.elevator_system.elevators:
-            if elevator.index not in floor.calls[self.direction] or floor.calls[self.direction][elevator.index]:
+            if elevator.parameters.index not in floor.calls[self.direction] or floor.calls[self.direction][elevator.parameters.index]:
                 continue
 
-            if not self.elevator_system.elevators_floor_operation[elevator.index][floor.floor] or not self.elevator_system.elevators_floor_operation[elevator.index][self.current_final_floor]:
+            if not self.elevator_system.elevators_floor_operation[elevator.parameters.index][floor.floor] or not self.elevator_system.elevators_floor_operation[elevator.parameters.index][self.current_final_floor]:
                 continue
 
             if elevator.is_available(self.direction, floor.floor):
@@ -136,10 +136,10 @@ class Person:
 
             distance = abs(elevator.current_floor_index - floor.floor)
             if not closest or distance < min_distance:
-                closest = [elevator.index]
+                closest = [elevator.parameters.index]
                 min_distance = distance
             elif distance == min_distance:
-                closest.append(elevator.index)
+                closest.append(elevator.parameters.index)
 
         if not closest:
             return

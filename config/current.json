@@ -3,14 +3,14 @@
     "floors": "8",
     "call logic": "SIMPLEX",
     "capacity": "10",
-    "operate floors capacity": 0,
-    "acceleration": "0.4",
+    "operate floors capacity": "0",
+    "acceleration": "0.5",
     "deceleration": "0.4",
     "maximal speed": "1",
     "door opening time": "3",
     "door idle time": "4",
-    "organize after idle": "",
-    "passenger queue file": "C:/Users/Michal/PycharmProjects/elevators/config/passengers_2023-04-07_02-30-55.csv",
+    "organize after idle": -1,
+    "passenger queue file": "C:/Users/Kvakino/PycharmProjects/elevators/config/passengers_EUBA.csv",
     "heights of floors": [
         "0",
         "4.8",
@@ -55,7 +55,7 @@
     ],
     "elevators organization": [
         "0",
-        "2",
-        "7"
+        "0",
+        "0"
     ]
 }

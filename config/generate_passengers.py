@@ -3,7 +3,8 @@ from datetime import datetime
 import random
 
 floors = {i for i in range(int(input("number of floors: ")))}
-mannerly = [int(num) for num in input("Mannerly (0, 1): ").split(",")]
+# mannerly = [int(num) for num in input("Mannerly (0, 1): ").split(",")]
+mannerly = [0]
 iterations = int(input("Number of persons: "))
 
 floors_tuple = tuple(floors)
@@ -12,7 +13,7 @@ passengers = {}
 
 for i in range(iterations):
     rand_time_str = "{:02d}:{:02d}:{:02d}.{:03d}".format(
-        random.randrange(8, 16),
+        random.randrange(9, 16),
         random.randrange(59),
         random.randrange(59),
         random.randrange(99)*10
@@ -31,11 +32,11 @@ passengers = dict(sorted(passengers.items()))
 now = datetime.now()
 timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-filename = f"../passengers_{timestamp}.csv"
+filename = f"passengers_{timestamp}.csv"
 
 with open(filename, mode="w", newline="") as file:
     writer = csv.writer(file)
-    writer.writerow(["arrival_time", "starting_floor", "final_floor", "mannerly"])
+    writer.writerow(["arrival_time", "starting_floor", "final_floor", "selfish"])
 
     for key in passengers:
         for passenger in passengers[key]:

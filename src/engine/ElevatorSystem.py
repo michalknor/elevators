@@ -4,6 +4,7 @@ import csv
 
 import random
 
+import src.engine.ElevatorParameters as ElevatorParameters
 import src.engine.Elevator as Elevator
 import src.engine.Floor as Floor
 import src.engine.Person as Person
@@ -15,24 +16,23 @@ class ElevatorSystem:
 
         self.canvas = canvas
 
-        self.config = config
+        #self.config = config
 
         self.number_of_elevators = int(config["elevators"])
         self.number_of_floors = int(config["floors"])
         self.call_logic = config["call logic"]
 
-        self.organize_after_idle = config["organize after idle"]
-
         self.heights_of_floors = [float(height) for height in config["heights of floors"]]
         self.elevators_floor_operation = config["elevators floor operation"]
 
-        self.elevators_organization = [int(floor) for floor in config["elevators organization"]]
-
         self.elevators = [
             Elevator.Elevator(
-                self, i, int(config["capacity"]), float(config["acceleration"]), float(config["deceleration"]),
-                float(config["maximal speed"]), float(config["door opening time"]), float(config["door idle time"]),
-                int(config["operate floors capacity"])
+                self, ElevatorParameters.ElevatorParameters(
+                    i, int(config["capacity"]),  float(config["acceleration"]), float(config["deceleration"]),
+                    float(config["maximal speed"]), float(config["door opening time"]), float(config["door idle time"]),
+                    int(config["operate floors capacity"]), int(config["elevators organization"][i]),
+                    float(config["organize after idle"])
+                )
             ) for i in range(self.number_of_elevators)
         ]
 
@@ -58,10 +58,10 @@ class ElevatorSystem:
                 else:
                     self.floors[j].calls["down"][i] = False
 
+        self.persons = dict()
         with open(config["passenger queue file"], "r") as file:
             reader = csv.reader(file)
             next(reader)
-            self.persons = dict()
 
             for row in reader:
                 if row[0] not in self.persons:
@@ -108,7 +108,7 @@ class ElevatorSystem:
             if elevator.current_floor_index == floor.floor and elevator.next_floor["direction"] == direction:
                 return
 
-            if elevator.index not in floor.calls[direction]:
+            if elevator.parameters.index not in floor.calls[direction]:
                 continue
 
             if floor.floor in elevator.calls[direction]:
@@ -121,10 +121,10 @@ class ElevatorSystem:
                 elif direction == "down":
                     distance += 2 * (elevator.max_floor - elevator.current_floor_index)
             if not closest or distance < min_distance:
-                closest = [elevator.index]
+                closest = [elevator.parameters.index]
                 min_distance = distance
             elif distance == min_distance:
-                closest.append(elevator.index)
+                closest.append(elevator.parameters.index)
 
         if not closest:
             return
@@ -134,7 +134,7 @@ class ElevatorSystem:
         self.call(direction, floor, self.elevators[index])
 
     def call(self, direction: str, floor: Floor, elevator: Elevator):
-        index = elevator.index
+        index = elevator.parameters.index
 
         floor.calls[direction][index] = True
         self.canvas.itemconfig(floor.canvas_objects[direction][index], fill="green")

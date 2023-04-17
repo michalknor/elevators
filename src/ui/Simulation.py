@@ -38,8 +38,8 @@ class Simulation:
 
         self.canvas.pack(expand=tk.YES, fill=tk.BOTH)
 
-        self.time = [8, 0, 0, 0]
-        self.str_time = ["08", "00", "00", "000"]
+        self.time = [8, 45, 0, 0]
+        self.str_time = ["08", "45", "00", "000"]
         self.text_time = None
 
         self.canvas.create_text(20, 20, text="time:", anchor="w")
@@ -73,7 +73,7 @@ class Simulation:
         for _ in range(self.current_speed):
             str_time = self.str_time[0]+":"+self.str_time[1]+":"+self.str_time[2]+"."+self.str_time[3]
 
-            if str_time == "17:00:00.000":
+            if str_time == "16:00:00.000":
                 self.canvas.itemconfig(self.text_time, text=str_time)
                 self.save_simulation_result()
                 return

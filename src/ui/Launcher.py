@@ -272,13 +272,15 @@ class Launcher:
 
     def elevator_call_logic_update(self, _=None):
         if self.elevator_call_logic_combobox.get() == "SIMPLEX":
-            self.organize_elevators_entry.config(state="disabled")
-            self.menu_edit.entryconfig("Organize elevators after idle", state="disabled")
+            self.operate_floors_entry.config(state="normal")
+            # self.organize_elevators_entry.config(state="disabled")
+            # self.menu_edit.entryconfig("Organize elevators after idle", state="disabled")
             return
 
         if self.elevator_call_logic_combobox.get() == "MULTIPLEX":
-            self.organize_elevators_entry.config(state="normal")
-            self.menu_edit.entryconfig("Organize elevators after idle", state="normal")
+            self.operate_floors_entry.config(state="disabled")
+            # self.organize_elevators_entry.config(state="normal")
+            # self.menu_edit.entryconfig("Organize elevators after idle", state="normal")
             return
 
     def adjust_heights_of_floors(self, number_of_floors: int):
@@ -337,6 +339,8 @@ class Launcher:
         config["door opening time"] = self.door_opening_time_entry.get()
         config["door idle time"] = self.door_idle_time_entry.get()
         config["organize after idle"] = self.organize_elevators_entry.get()
+        if config["organize after idle"] == "":
+            config["organize after idle"] = -1
         config["passenger queue file"] = self.passenger_queue_entry.get()
 
         config["heights of floors"] = [item.get() for item in self.heights_of_floors]
@@ -344,7 +348,7 @@ class Launcher:
             [item2.get() for item2 in item] for item in self.elevators_floor_operation
         ]
 
-        config["elevators organization"] = [item.get() for item in self.elevators_organization]
+        config["elevators organization"] = [item.get() or "-1" for item in self.elevators_organization]
 
         return config
 

@@ -40,27 +40,25 @@ def create_data_persons(persons: list[Person], directory: str) -> str:
 def create_boxplot_persons(csv_file: str, directory: str):
     df = pd.read_csv(csv_file)
 
-    plt.figure("Figure 1")
+    boxplots = [
+        {"name": "Waiting Time", "df": df['waiting']},
+        {"name": "Time in elevator", "df": df['in_elevator']},
+        {"name": "Total time in elevator system", "df": df['in_elevator'] + df['waiting']}
+    ]
 
-    plt.boxplot(df['waiting'])
+    plt.clf()
 
-    # add labels and title to the plot
-    plt.xlabel('Waiting Time')
-    plt.ylabel('Seconds')
-    plt.title('Boxplot of Waiting Time')
+    for boxplot in boxplots:
+        plt.boxplot(boxplot["df"], showfliers=False)
 
-    path = os.path.join(directory, 'Waiting Time')
-    plt.savefig(path)
+        plt.xlabel("")
+        plt.ylabel('Seconds')
+        plt.title(boxplot["name"])
 
-    plt.figure("Figure 2")
+        plt.ylim(0, None)
 
-    plt.boxplot(df['in_elevator'])
+        path = os.path.join(directory, boxplot["name"])
+        plt.savefig(path)
 
-    # add labels and title to the plot
-    plt.xlabel('Waiting Time')
-    plt.ylabel('Seconds')
-    plt.title('Boxplot of Time in elevator')
-
-    path = os.path.join(directory, 'Time in elevator')
-    plt.savefig(path)
+        plt.clf()
 
