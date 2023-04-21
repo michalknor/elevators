@@ -3,13 +3,14 @@ import tkinter as tk
 import src.engine.ElevatorSystem as ElevatorSystem
 
 import src.util.Data as Data
+import src.util.Ui as Ui
 
 
 class Simulation:
     def __init__(self, window, config):
         self.window = window
 
-        self.window.title("Elevators simulation")
+        self.window.title("Elevators simulation - running")
 
         frame = tk.Frame(self.window, width=300, height=300)
         frame.pack(expand=True, fill=tk.BOTH)  # .grid(row=0,column=0)
@@ -65,30 +66,37 @@ class Simulation:
 
         directory = Data.get_directory()
 
-        persons_csv = Data.create_data_persons(persons, directory)
+        directory_persons = directory + "/persons"
+        Data.create_directory(directory_persons)
+        persons_csv = Data.create_data_persons(persons, directory_persons)
+        Data.create_graphs_persons(persons_csv, directory_persons)
 
-        Data.create_boxplot_persons(persons_csv, directory)
+        directory_elevators = directory + "/elevators"
+        Data.create_directory(directory_elevators)
+        elevators_csv = Data.create_data_elevators(self.elevator_system.elevators, directory_elevators)
+        Data.create_graphs_elevators(elevators_csv, directory_elevators)
 
     def update_time(self):
         for _ in range(self.current_speed):
             str_time = self.str_time[0]+":"+self.str_time[1]+":"+self.str_time[2]+"."+self.str_time[3]
 
-            if str_time == "16:00:00.000":
+            if str_time == "16:15:00.000":
                 self.canvas.itemconfig(self.text_time, text=str_time)
                 self.save_simulation_result()
+                self.window.title("Elevators simulation - completed")
                 return
 
             self.elevator_system.tick(str_time)
 
             self.time[-1] += 10
             if self.time[-1] == 1000:
-                self.time[-2] += self.time[-1] // 1000
+                self.time[-2] += 1
                 self.time[-1] = 0
                 if self.time[-2] == 60:
-                    self.time[-3] += self.time[-2] // 60
+                    self.time[-3] += 1
                     self.time[-2] = 0
                     if self.time[-3] == 60:
-                        self.time[-4] += self.time[-3] // 60
+                        self.time[-4] += 1
                         self.time[-3] = 0
                         self.str_time[-4] = "{:02d}".format(self.time[-4])
                     self.str_time[-3] = "{:02d}".format(self.time[-3])

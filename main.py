@@ -1,5 +1,5 @@
-import src.ui.Launcher as Launcher
+import src.ui.Config as Config
 
 
 if __name__ == '__main__':
-    Launcher.Launcher()
+    Config.Config()

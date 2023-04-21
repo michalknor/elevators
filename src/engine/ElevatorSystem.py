@@ -48,6 +48,7 @@ class ElevatorSystem:
 
                 if not possible_up:
                     self.floors[j].possible_up[i] = False
+                    self.elevators[i].max_floor = j
                 else:
                     self.floors[j].calls["up"][i] = False
 

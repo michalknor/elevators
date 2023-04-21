@@ -13,7 +13,7 @@ DEFAULT_NUMBER_OF_FLOORS = 8
 DEFAULT_ELEVATOR_LOGIC = 0
 
 
-class Launcher:
+class Config:
     def __init__(self):
         self.window = tk.Tk()
 
@@ -54,6 +54,7 @@ class Launcher:
 
         self.window.resizable(False, False)
         self.window.eval('tk::PlaceWindow . center')
+        Ui.set_icon(self.window)
 
         # # remove
         # import os
@@ -73,10 +74,10 @@ class Launcher:
         self.window.mainloop()
 
     def draw_widgets(self):
-        self.number_of_elevators_spinbox = self.get_spinbox("Number of elevators:", 2, 10)
+        self.number_of_elevators_spinbox = self.get_spinbox("Number of elevators:", 1, 100)
         self.number_of_elevators_spinbox.set(DEFAULT_NUMBER_OF_ELEVATORS)
 
-        self.number_of_floors_spinbox = self.get_spinbox("Number of floors:", 3, 50)
+        self.number_of_floors_spinbox = self.get_spinbox("Number of floors:", 2, 1000)
         self.number_of_floors_spinbox.set(DEFAULT_NUMBER_OF_FLOORS)
 
         self.draw_elevator_call_logic()
@@ -124,7 +125,7 @@ class Launcher:
 
         self.menu_edit = tk.Menu(self.menubar, tearoff=0)
         self.menu_edit.add_command(label="Heights of floors", command=self.show_heights_of_floors)
-        self.menu_edit.add_command(label="Elevators floor operation", command=self.draw_elevators_floor_operation)
+        self.menu_edit.add_command(label="Elevators floors operation", command=self.draw_elevators_floors_operation)
         self.menu_edit.add_command(label="Organize elevators after idle", command=self.draw_elevators_organization)
 
         self.menubar.add_cascade(label="Edit", menu=self.menu_edit)
@@ -158,6 +159,7 @@ class Launcher:
 
     def show_heights_of_floors(self):
         self.create_modal_window(self.close_modal_window)
+        self.modal_window.resizable(False, False)
 
         number_of_floors = int(self.number_of_floors_spinbox.get())
 
@@ -183,8 +185,9 @@ class Launcher:
 
         self.center_modal_window()
 
-    def draw_elevators_floor_operation(self):
+    def draw_elevators_floors_operation(self):
         self.create_modal_window(self.close_modal_window)
+        self.modal_window.resizable(False, False)
 
         number_of_elevators = int(self.number_of_elevators_spinbox.get())
         number_of_floors = int(self.number_of_floors_spinbox.get())
@@ -198,8 +201,8 @@ class Launcher:
                     self.modal_window,
                     variable=self.elevators_floor_operation[j][number_of_floors-i-1]
                 )
-                if i == number_of_floors - 1:
-                    checkbutton.config(state="disabled")
+                # if i == number_of_floors - 1:
+                #     checkbutton.config(state="disabled")
 
                 checkbutton.grid(row=i+1, column=j+1, sticky="w", pady=2)
 
@@ -207,6 +210,7 @@ class Launcher:
 
     def draw_elevators_organization(self):
         self.create_modal_window(self.close_modal_window)
+        self.modal_window.resizable(False, False)
 
         number_of_elevators = int(self.number_of_elevators_spinbox.get())
 
@@ -348,7 +352,7 @@ class Launcher:
             [item2.get() for item2 in item] for item in self.elevators_floor_operation
         ]
 
-        config["elevators organization"] = [item.get() or "-1" for item in self.elevators_organization]
+        config["elevators organization"] = [item.get() or 0 for item in self.elevators_organization]
 
         return config
 
@@ -375,8 +379,6 @@ class Launcher:
         Ui.set_value_entry(self.door_idle_time_entry, data["door idle time"])
         Ui.set_value_entry(self.organize_elevators_entry, data["organize after idle"])
         Ui.set_value_entry(self.passenger_queue_entry, data["passenger queue file"])
-
-        print(data["passenger queue file"])
 
         self.heights_of_floors = [tk.StringVar(value=value) for value in data["heights of floors"]]
 
